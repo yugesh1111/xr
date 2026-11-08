@@ -20,8 +20,8 @@ class Stats(private val context: Context) {
     private val powerMw = ArrayList<Double>()
     private val start = System.currentTimeMillis()
     private var lastSample = 0L
-    private val bm = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-    private val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    private val bm by lazy { context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager }
+    private val pm by lazy { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
 
     fun frame(landmark: Double) { synchronized(this) { landmarkMs.add(landmark) }; maybeSample() }
     fun inference(features: Double, model: Double) {
