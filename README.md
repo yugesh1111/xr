@@ -9,8 +9,16 @@ device with an INT8 model of about 1.5 MB.
 
 **Status:** WLASL100, deployed INT8 model (4.4 MB): **84% top-1 / 96% top-5**
 on the official test clips, **78.2%** on a larger pooled set of 252 clips
-(raw-landmark baseline: 52-60%). Android app builds; not yet run on a phone.
-See [Results](#results) and [Work log](#work-log).
+(raw-landmark baseline: 52-60%). Android app runs on the Android emulator
+(built-in test clips 6/6 correct, same answers as Python); not yet run on a
+real phone. See [Results](#results), [How to read these numbers](#how-to-read-these-numbers)
+and [Work log](#work-log).
+
+**Read with care:** 87% of the official test clips come from signers who are
+also in training, and the pooled set includes the validation signers used to
+pick checkpoints and the ensemble, so both numbers are optimistic for new
+people. A score on held-out signers never used for any choice is the honest
+headline; see [docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md).
 
 ## Contents
 
@@ -371,8 +379,27 @@ for FP32 and INT8.
 `main.py` output, one line per clip:
 
 ```json
-{"clip_id": "test_0412", "prediction": "HAPPY", "top5": ["HAPPY", "HAND", "HOUSE", "HELP", "HOME"], "confidence": 0.81, "latency_ms": 23.4}
+{"clip_id": "06335", "prediction": "BIRD", "top5": ["BIRD", "..."], "confidence": 0.8866, "latency_ms": 10.88,
+ "frames": 111, "landmark_ms_total": 1525.8, "landmark_ms_per_frame": 13.75, "end_to_end_ms": 1536.7}
 ```
+
+- `latency_ms`: features + INT8 classifier, once per clip.
+- `landmark_ms_per_frame`: MediaPipe Holistic per video frame (the real-time
+  cost on a live camera).
+- `end_to_end_ms`: the whole clip, file to word, on this machine.
+
+**Docker** (inference only, runs with no network):
+
+```bash
+docker build -t echogesture .
+docker run --rm --network none -v /path/to/clips:/clips -v "$PWD/results:/app/results" \
+    echogesture --videos /clips --out results/predictions.jsonl
+```
+
+**results.csv**: `scripts/make_results.py` reads the evaluation, robustness
+and phone benchmark files and writes one row per hackathon target with the
+measured value and PASS/FAIL; a missing input leaves the cell empty rather
+than guessing. Full sequence in [docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md).
 
 ## Android app
 
@@ -454,6 +481,23 @@ for latency or power numbers).
 WLASL100, trained on CPU, seed 0. **Pooled** = 252 clips: validation (9
 signers never seen in training) + WLASL's official test clips we could
 obtain. 95% confidence intervals are Wilson intervals.
+
+### How to read these numbers
+
+- **Official test top-1 (84%) mostly measures people the model has seen.**
+  87 of the 100 official WLASL100 test clips we have come from signers who
+  are also in training. The hackathon's hidden test is new people.
+- **Pooled top-1 (78.2%) is optimistic.** 152 of the 252 pooled clips are
+  the validation signers, and `train.py` keeps the checkpoint with the best
+  validation accuracy; the ensemble was also chosen on these clips. Expect
+  roughly 70-75% on new signers until the held-out-signer number exists.
+- **Not comparable with published WLASL100 results.** We could obtain 1,013
+  of 2,038 clips and 100 of the official test clips; papers use the full set.
+- **Latency P95 below is the classifier only**, run once per sign. The
+  per-frame cost is MediaPipe Holistic, which runs on every camera frame:
+  about 14-21 ms per frame on an Apple-silicon Mac CPU, 83-118 ms on the
+  Android emulator (laptop CPU, not meaningful). The phone number comes from
+  the app's Bench button and is not measured yet.
 
 ### Deployed model: INT8 ensemble of E4 + E13 + E12
 
@@ -624,9 +668,12 @@ scripts/
   train.py                  training (E1-E5)
   evaluate.py               accuracy on a split, seen vs unseen signers
   export_onnx.py            ONNX + INT8 + latency report
+  make_results.py           results.csv from evaluation, robustness and phone benchmark files
   make_synthetic.py         synthetic signers for testing the code
   convert_kaggle_asl.py     optional external data
 tests/                      feature and model tests
+docs/CLOUD_PROCEDURE.md     remaining steps to finish the submission
+Dockerfile                  inference image (requirements-inference.txt)
 android/                    Android app (Kotlin): camera, HUD, benchmark mode
   app/src/main/java/com/echogesture/core/   feature pipeline port, segmenter
   app/src/main/java/com/echogesture/app/    camera, MediaPipe, ONNX Runtime, HUD, stats
@@ -712,10 +759,21 @@ What was done, in order, and why (2026).
   a laptop emulator or Samsung Remote Test Lab (real Galaxy phones in the
   browser).
 
-**Next**
-- Run the app on the Galaxy A36 (test mode + benchmark) for real latency,
-  power and thermal numbers.
-- Video-level robustness tests; E6-E10.
-- Robustness benchmark (dark, occlusion, camera angle).
-- TFLite export for Samsung GPU/NPU; on-device latency, power and thermal.
-- `results.csv` generator, Dockerfile, demo app.
+**8 Nov - first run of the app (laptop emulator)**
+- The app crashed on launch on every device: `Stats` called
+  `getSystemService()` before `onCreate()`. Fixed (lazy lookups).
+- Android 16 arm64 emulator on a Mac: built-in test clips 6/6 correct, all
+  the same as Python (4 of the 10 clips could not be downloaded from their
+  original sites; the app now skips clips that were not packaged).
+- `main.py` now reports MediaPipe time per frame and end-to-end time, not
+  only the classifier. Mac CPU: 14-21 ms per frame for MediaPipe, 6-13 ms
+  for the classifier; 6/6 clips correct.
+- Added `Dockerfile` (inference only), `scripts/make_results.py`
+  (results.csv), and the honest-reading notes in Results.
+
+**Next** (step by step in [docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md))
+- Held-out-signer accuracy that no choice was made on (the headline number).
+- `predictions.jsonl` and `results.csv` from the final model; Docker build check.
+- Run the app on the Galaxy A36 or Remote Test Lab (Test + 10-minute Bench).
+- Organiser confirmation for Kaggle ASL Signs; E4+E13 fallback ready.
+- Demo video and presentation.

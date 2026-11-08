@@ -22,9 +22,13 @@ class VideoTester(private val context: Context, private val recognizer: Recogniz
 
     fun builtIn(progress: (String) -> Unit): List<Row> {
         val list = JSONArray(context.assets.open("test_clips.json").bufferedReader().readText())
-        return (0 until list.length()).map { i ->
+        // skip clips whose video was not packaged (the videos are not in git; a build
+        // made without data/wlasl/raw/ has the list but not every file)
+        val bundled = context.assets.list("test_clips")?.toSet() ?: emptySet()
+        return (0 until list.length()).mapNotNull { i ->
             val c = list.getJSONObject(i)
             val id = c.getString("video_id")
+            if ("$id.mp4" !in bundled) return@mapNotNull null
             progress("clip ${i + 1}/${list.length()}  ${c.getString("gloss")}")
             val r = MediaMetadataRetriever()
             context.assets.openFd("test_clips/$id.mp4").use { r.setDataSource(it.fileDescriptor, it.startOffset, it.length) }

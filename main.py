@@ -45,18 +45,26 @@ def predict(video_path: str) -> dict:
     """Return the predicted gloss/word for one video clip. Must run fully on-device."""
     sess, meta = _load()
     clip_id = Path(video_path).stem
+    t0 = time.perf_counter()
     xyz = extract_video(video_path)
-    if len(xyz) == 0:
+    landmark_ms = (time.perf_counter() - t0) * 1000
+    frames = len(xyz)
+    timing = {"frames": frames, "landmark_ms_total": round(landmark_ms, 1),
+              "landmark_ms_per_frame": round(landmark_ms / max(frames, 1), 2)}
+    if frames == 0:
         return {"clip_id": clip_id, "prediction": meta["vocab"][0], "top5": meta["vocab"][:5],
-                "confidence": 0.0, "latency_ms": 0.0}
+                "confidence": 0.0, "latency_ms": 0.0, **timing, "end_to_end_ms": round(landmark_ms, 1)}
     t = time.perf_counter()
     x = make_input(xyz, meta["mode"], meta["length"])[None].astype(np.float32)
     p = _softmax(sess.run(None, {"x": x})[0][0])
-    latency = (time.perf_counter() - t) * 1000  # features + model; landmark extraction is timed separately
+    latency = (time.perf_counter() - t) * 1000
     top = np.argsort(-p)[:5]
+    # latency_ms = features + classifier, once per clip. MediaPipe runs on every frame and
+    # dominates the cost; it is reported separately so the two are never confused.
     return {"clip_id": clip_id, "prediction": meta["vocab"][top[0]],
             "top5": [meta["vocab"][i] for i in top], "confidence": round(float(p[top[0]]), 4),
-            "latency_ms": round(latency, 2)}
+            "latency_ms": round(latency, 2), **timing,
+            "end_to_end_ms": round(landmark_ms + latency, 1)}
 
 
 if __name__ == "__main__":

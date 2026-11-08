@@ -1,0 +1,5 @@
+# Only what main.py needs at inference time (no torch, no training tools)
+numpy>=1.26
+opencv-python-headless>=4.9
+mediapipe>=0.10.14
+onnxruntime>=1.18

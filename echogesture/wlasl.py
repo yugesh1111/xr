@@ -51,15 +51,33 @@ def build_manifest(entries, vocab_size=None, vocab=None):
     return pd.DataFrame(rows)
 
 
-def signer_split(df, val_fraction=0.15, seed=0):
+def signer_split(df, val_fraction=0.15, seed=0, holdout_fraction=0.0, holdout_seed=100):
     """Adds column `split`: official test stays test; the remaining clips are
     divided into train/val with no signer appearing in both.
     Also adds `test_signer_seen` so test accuracy can be reported separately
-    for seen and unseen signers."""
+    for seen and unseen signers.
+
+    holdout_fraction > 0 first moves whole signers (about that share of the
+    non-test clips) to split "holdout": never trained on and never used to pick
+    a checkpoint, an ensemble or a setting, so its accuracy is an unbiased
+    estimate for new people. With holdout_fraction = 0 the split is exactly
+    the original one."""
     df = df.copy()
     pool = df[df.official_split != "test"]
     counts = pool.signer_id.value_counts()
-    signers = list(counts.index)
+    holdout_signers = set()
+    if holdout_fraction > 0:
+        hs = list(counts.index)
+        random.Random(holdout_seed).shuffle(hs)
+        n = 0
+        for s in hs:
+            if n >= holdout_fraction * len(pool):
+                break
+            if counts[s] > 0.2 * len(pool):
+                continue
+            holdout_signers.add(s)
+            n += counts[s]
+    signers = [s for s in counts.index if s not in holdout_signers]
     random.Random(seed).shuffle(signers)
     target, n, val_signers = val_fraction * len(pool), 0, set()
     for s in signers:
@@ -73,6 +91,7 @@ def signer_split(df, val_fraction=0.15, seed=0):
         n += counts[s]
     df["split"] = "train"
     df.loc[df.signer_id.isin(val_signers) & (df.official_split != "test"), "split"] = "val"
+    df.loc[df.signer_id.isin(holdout_signers) & (df.official_split != "test"), "split"] = "holdout"
     df.loc[df.official_split == "test", "split"] = "test"
     train_signers = set(df.loc[df.split == "train", "signer_id"])
     df["test_signer_seen"] = df.signer_id.isin(train_signers) & (df.split == "test")
@@ -81,8 +100,10 @@ def signer_split(df, val_fraction=0.15, seed=0):
 
 def summarize(df):
     lines = [f"clips: {len(df)}, glosses: {df.gloss.nunique()}, signers: {df.signer_id.nunique()}"]
-    for s in ("train", "val", "test"):
+    for s in ("train", "val", "holdout", "test"):
         part = df[df.split == s]
+        if s == "holdout" and part.empty:
+            continue
         lines.append(f"  {s:5s}: {len(part):6d} clips, {part.signer_id.nunique():3d} signers, "
                      f"{part.gloss.nunique():4d} glosses")
     val_cov = df[df.split == "val"].gloss.nunique() / max(df.gloss.nunique(), 1)
