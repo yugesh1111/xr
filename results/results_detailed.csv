@@ -1,0 +1,13 @@
+metric,measured,unit,target,status,source,note
+top1_accuracy,71.3,%,>= 70,PASS,"eval_holdout_int8.json, eval_holdout_int8.json, eval_holdout_int8.json","mean over 3 held-out signer groups: h100_ens: 76.5% (145 clips, 95% CI 69.0-82.7); h200_ens: 66.7% (186 clips, 95% CI 59.6-73.0); h300_ens: 70.7% (150 clips, 95% CI 62.9-77.4)"
+top5_accuracy,90.22,%,,,,
+top1_official_test,84.0,%,reference,,eval_test_int8.json,"100 official WLASL100 test clips we could obtain; signers also in train: 82 clips, unseen: 18"
+model_size,4.65,MB,<= 20,PASS,model_int8.onnx,INT8 ONNX
+robustness_drop_landmark,4.17,points,<= 5,PASS,robustness_landmark.json,mean over conditions; worst hide_hand_30pct 6.8
+robustness_drop_video,6.25,points,<= 5,FAIL,robustness_video.json,mean over conditions; worst blur 13.1
+latency_p95_per_frame_phone,,ms,<= 50,,results_device.csv,no phone run yet: MediaPipe Holistic per camera frame (the real-time cost)
+latency_p95_classifier_phone,,ms,<= 50,,results_device.csv,"no phone run yet: features + INT8 model, once per sign"
+avg_power_phone,,mW,<= 500,,results_device.csv,"no phone run yet: whole phone, unplugged"
+thermal_drift_10min_phone,,%,<= 20,,results_device.csv,"no phone run yet: landmark latency, first vs last minute"
+latency_p95_per_frame_cpu,45.91,ms,reference,,predictions.jsonl,"99 clips (first skipped: warm-up), computer CPU, not the phone"
+latency_p95_classifier_cpu,15.63,ms,reference,,predictions.jsonl,"computer CPU, 1 thread"

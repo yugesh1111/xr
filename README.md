@@ -7,18 +7,19 @@ recognition for the Samsung PRISM XR Hackathon 2026, Track 02
 One short video clip in, one ASL word (gloss) out, running fully on the
 device with an INT8 model of about 1.5 MB.
 
-**Status:** WLASL100, deployed INT8 model (4.4 MB): **84% top-1 / 96% top-5**
-on the official test clips, **78.2%** on a larger pooled set of 252 clips
-(raw-landmark baseline: 52-60%). Android app runs on the Android emulator
-(built-in test clips 6/6 correct, same answers as Python); not yet run on a
-real phone. See [Results](#results), [How to read these numbers](#how-to-read-these-numbers)
-and [Work log](#work-log).
+**Status:** WLASL100, deployed INT8 model (4.4 MB): **71.3% top-1 on signers
+never seen in training or in any model choice** (mean of 3 held-out signer
+groups, 66.7-76.6%; see [Held-out signers](#held-out-signers-headline)).
+For reference: 84% top-1 / 96% top-5 on the official test clips (mostly
+signers seen in training) and 78.2% on a pooled 252-clip set (raw-landmark
+baseline: 52-60%). Android app runs on the Android emulator (built-in test
+clips 6/6 correct, same answers as Python); not yet run on a real phone.
+See [Results](#results) and [Work log](#work-log).
 
 **Read with care:** 87% of the official test clips come from signers who are
 also in training, and the pooled set includes the validation signers used to
-pick checkpoints and the ensemble, so both numbers are optimistic for new
-people. A score on held-out signers never used for any choice is the honest
-headline; see [docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md).
+pick checkpoints and the ensemble, so both are optimistic for new people.
+That is why the held-out-signer number leads.
 
 ## Contents
 
@@ -482,6 +483,28 @@ WLASL100, trained on CPU, seed 0. **Pooled** = 252 clips: validation (9
 signers never seen in training) + WLASL's official test clips we could
 obtain. 95% confidence intervals are Wilson intervals.
 
+### Held-out signers (headline)
+
+Procedure ([docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md)): for each
+seed, pick a group of signers, remove **all** their clips from train, val and
+test, retrain the full recipe (E4 + E13 + E12, same settings), export the
+INT8 ensemble and evaluate it **once** on those signers. Nothing - checkpoint,
+ensemble, threshold - was chosen by looking at these clips. No signer overlap
+between held-out and training data (checked per seed).
+
+| seed | held-out signers | clips | top-1 (INT8) | 95% CI | top-5 | macro top-1 |
+|---|---|---|---|---|---|---|
+| 100 | 8 | 145 | 76.6% | 69.0-82.7% | 95.2% | 80.0% |
+| 200 | 22 | 186 | 66.7% | 59.6-73.0% | 88.2% | 71.8% |
+| 300 | 18 | 150 | 70.7% | 62.9-77.4% | 87.3% | 75.1% |
+| **mean** | | **481** | **71.3%** | | **90.2%** | **75.6%** |
+
+Above the 70% target on average, but close to it, and seed 200 is below it:
+a single new person can score anywhere from 0% to 100% (per-signer median
+67-79%). Signs that fail across seeds: CLOTHES, THANKSGIVING, WHAT, RIGHT,
+COOL. Source files: `runs/h{100,200,300}_ens/eval_holdout_int8.json`,
+summarised in `results/results.csv` / `results_detailed.csv`.
+
 ### How to read these numbers
 
 - **Official test top-1 (84%) mostly measures people the model has seen.**
@@ -489,8 +512,8 @@ obtain. 95% confidence intervals are Wilson intervals.
   are also in training. The hackathon's hidden test is new people.
 - **Pooled top-1 (78.2%) is optimistic.** 152 of the 252 pooled clips are
   the validation signers, and `train.py` keeps the checkpoint with the best
-  validation accuracy; the ensemble was also chosen on these clips. Expect
-  roughly 70-75% on new signers until the held-out-signer number exists.
+  validation accuracy; the ensemble was also chosen on these clips. The
+  held-out-signer mean (71.3%) is the number to expect for new people.
 - **Not comparable with published WLASL100 results.** We could obtain 1,013
   of 2,038 clips and 100 of the official test clips; papers use the full set.
 - **Latency P95 below is the classifier only**, run once per sign. The
@@ -777,3 +800,15 @@ What was done, in order, and why (2026).
 - Run the app on the Galaxy A36 or Remote Test Lab (Test + 10-minute Bench).
 - Organiser confirmation for Kaggle ASL Signs; E4+E13 fallback ready.
 - Demo video and presentation.
+
+**8 Nov - held-out signers and results.csv**
+- Ran docs/CLOUD_PROCEDURE.md: 3 seeds (100/200/300), each removes a group of
+  signers completely, retrains E4 + E13 + E12, exports INT8, evaluates once.
+- Held-out top-1: 76.6% / 66.7% / 70.7%, **mean 71.3%** (top-5 90.2%).
+  Now the headline; 84% (official test) kept as reference only.
+- `results/results.csv` in the brief's format: accuracy 71.3 PASS, size
+  4.65 MB PASS, robustness 6.25 FAIL (video-level, the stricter test; the
+  landmark-level drop is 4.2). Phone latency, power and thermal empty until
+  the Bench run on the Galaxy A36.
+- `results/predictions.jsonl` from `main.py` on the 100 official test
+  videos: 84/100 correct (same as evaluate.py); CPU per-frame P95 45.9 ms.
