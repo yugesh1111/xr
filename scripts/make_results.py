@@ -1,12 +1,20 @@
-"""Build results/results.csv: one row per hackathon target, measured value, pass/fail.
+"""Build results/results.csv in the brief's format (Track 02, page 11):
+columns metric, target, measured, unit, device, runtime, pass and the six
+metrics top1_accuracy, latency_p95, model_size, accuracy_drop_robustness,
+avg_power, thermal_drift_10min. A longer table with the sources and notes
+behind every number goes to results/results_detailed.csv.
 
 Every number is read from a file another step wrote, so nothing is typed by hand:
 
-    --eval        eval_*.json from scripts/evaluate.py (headline accuracy; use the
-                  held-out-signer split, see docs/CLOUD_PROCEDURE.md)
+    --eval        one or more eval_*.json from scripts/evaluate.py (headline accuracy;
+                  use the held-out-signer splits, see docs/CLOUD_PROCEDURE.md);
+                  several files (seeds) are averaged
     --eval-test   eval_test_int8.json (official WLASL test clips, reported for reference)
     --robustness  results/robustness_landmark.json and/or robustness_video.json
-    --run-key     key of the shipped model inside the robustness files, e.g. E4+E13+E12
+    --run-key     key of the shipped model inside the robustness files, e.g. e4+e13+e12
+    --robustness-level  which robustness file goes into the brief's single row
+                  (default video: pixels degraded, then MediaPipe re-run - the
+                  closer-to-real and stricter of the two)
     --device      results_device.csv saved by the app's Bench button (phone)
     --predictions predictions.jsonl from main.py (laptop/CPU latency, for reference)
 
@@ -43,14 +51,16 @@ def drop(path, key):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--eval")
+    ap.add_argument("--eval", nargs="*", default=[])
     ap.add_argument("--eval-test")
     ap.add_argument("--robustness", nargs="*", default=[])
     ap.add_argument("--run-key", default="E4+E13+E12")
     ap.add_argument("--device")
     ap.add_argument("--predictions")
     ap.add_argument("--model", default=str(ROOT / "models" / "model_int8.onnx"))
+    ap.add_argument("--robustness-level", default="video")
     ap.add_argument("--out", default="results/results.csv")
+    ap.add_argument("--out-detailed", default="results/results_detailed.csv")
     args = ap.parse_args()
 
     rows = []
@@ -61,12 +71,18 @@ def main():
         rows.append({"metric": metric, "measured": m, "unit": unit, "target": target,
                      "status": status, "source": source, "note": note})
 
+    brief = {}  # metric -> (measured, device, runtime)
     if args.eval:
-        e = json.loads(Path(args.eval).read_text())
-        lo, hi = e.get("top1_95ci", [None, None])
-        add("top1_accuracy", 100 * e["top1"], "%", ">= 70", 100 * e["top1"] >= 70, Path(args.eval).name,
-            f"{e['clips']} clips, split {e['split']}, 95% CI {100 * lo:.1f}-{100 * hi:.1f}")
-        add("top5_accuracy", 100 * e["top5"], "%", "", None, Path(args.eval).name)
+        evals = [json.loads(Path(p).read_text()) for p in args.eval]
+        top1 = float(np.mean([e["top1"] for e in evals]))
+        parts = []
+        for p, e in zip(args.eval, evals):
+            lo, hi = e.get("top1_95ci", [0, 0])
+            parts.append(f"{Path(p).parent.name}: {100 * e['top1']:.1f}% ({e['clips']} clips, 95% CI {100 * lo:.1f}-{100 * hi:.1f})")
+        add("top1_accuracy", 100 * top1, "%", ">= 70", 100 * top1 >= 70, ", ".join(Path(p).name for p in args.eval),
+            f"mean over {len(evals)} held-out signer groups: " + "; ".join(parts))
+        add("top5_accuracy", 100 * float(np.mean([e["top5"] for e in evals])), "%", "", None, "")
+        brief["top1_accuracy"] = (100 * top1, "offline evaluation (cloud CPU)", "ONNX Runtime INT8, CPU")
     else:
         add("top1_accuracy", None, "%", ">= 70", None, "", "pass --eval")
     if args.eval_test:
@@ -79,12 +95,16 @@ def main():
     size_mb = Path(args.model).stat().st_size / 1e6 if Path(args.model).exists() else None
     add("model_size", size_mb, "MB", "<= 20", None if size_mb is None else size_mb <= 20,
         Path(args.model).name, "INT8 ONNX")
+    brief["model_size"] = (size_mb, "any", "ONNX INT8 (static, per-channel)")
 
     for path in args.robustness:
         level = Path(path).stem.replace("robustness_", "")
         mean, (worst, wname) = drop(path, args.run_key)
         add(f"robustness_drop_{level}", mean, "points", "<= 5", mean <= 5, Path(path).name,
             f"mean over conditions; worst {wname} {worst:.1f}")
+        if level == args.robustness_level:
+            brief["accuracy_drop_robustness"] = (mean, "offline evaluation (cloud CPU)",
+                                                 f"{level}-level corruptions, mean over conditions")
 
     dev = {}
     if args.device and Path(args.device).exists():
@@ -103,13 +123,17 @@ def main():
         "results_device.csv", f"{device_name}: MediaPipe Holistic per camera frame (the real-time cost)")
     add("latency_p95_classifier_phone", fm, "ms", "<= 50", None if fm is None else fm <= 50,
         "results_device.csv", f"{device_name}: features + INT8 model, once per sign")
+    runtime = "MediaPipe Holistic + ONNX Runtime INT8"
+    brief["latency_p95"] = (lm, device_name if lm is not None else "", runtime + ", per camera frame")
     pw = devval("avg_power")
     add("avg_power_phone", pw, "mW", "<= 500", None if pw is None else pw <= 500, "results_device.csv",
         f"{device_name}: whole phone, unplugged")
+    brief["avg_power"] = (pw, device_name if pw is not None else "", "whole phone, unplugged")
     td = devval("thermal_drift_10min")
     add("thermal_drift_10min_phone", td, "%", "<= 20", None if td is None else td <= 20, "results_device.csv",
         f"{device_name}: landmark latency, first vs last minute")
 
+    brief["thermal_drift_10min"] = (td, device_name if td is not None else "", "10-minute live run")
     if args.predictions:
         preds = [json.loads(line) for line in open(args.predictions) if line.strip()]
         timed = [p for p in preds if p.get("frames")]
@@ -121,15 +145,30 @@ def main():
         add("latency_p95_classifier_cpu", p95(clf), "ms", "reference", None, Path(args.predictions).name,
             "computer CPU, 1 thread")
 
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", newline="") as f:
+    detailed = Path(args.out_detailed)
+    detailed.parent.mkdir(parents=True, exist_ok=True)
+    with open(detailed, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)
-    for r in rows:
-        print(f"{r['metric']:32s} {str(r['measured']):>8s} {r['unit']:6s} {r['target']:10s} {r['status']:4s} {r['note']}")
-    print(f"-> {out}")
+
+    # the brief's sheet: fixed metrics, targets as written in the brief
+    spec = [("top1_accuracy", ">=70", "%", lambda v: v >= 70),
+            ("latency_p95", "<=50", "ms", lambda v: v <= 50),
+            ("model_size", "<=25", "MB", lambda v: v <= 25),
+            ("accuracy_drop_robustness", "<=5", "pt", lambda v: v <= 5),
+            ("avg_power", "<=500", "mW", lambda v: v <= 500),
+            ("thermal_drift_10min", "<=20", "%", lambda v: v <= 20)]
+    out = Path(args.out)
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["metric", "target", "measured", "unit", "device", "runtime", "pass"])
+        for metric, target, unit, ok in spec:
+            v, device, runtime = brief.get(metric, (None, "", ""))
+            w.writerow([metric, target, "" if v is None else round(v, 2), unit, device, runtime,
+                        "" if v is None else ("PASS" if ok(v) else "FAIL")])
+    print(out.read_text())
+    print(f"details: {detailed}")
 
 
 if __name__ == "__main__":
