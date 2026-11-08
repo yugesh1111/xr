@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+models/*.task
+runs/
+*.npz
+.DS_Store
+.env
+kaggle.json
+results/
+runs_*.log
+*.apk

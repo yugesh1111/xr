@@ -1,0 +1,13 @@
+numpy>=1.26
+opencv-python>=4.9
+mediapipe>=0.10.14
+pandas>=2.1
+pyarrow>=15
+requests>=2.31
+yt-dlp>=2024.8.6
+tqdm>=4.66
+pytest>=8
+torch>=2.3
+onnx>=1.16
+onnxscript>=0.1
+onnxruntime>=1.18

@@ -1,0 +1,62 @@
+[
+ {
+  "video_id": "00625",
+  "gloss": "ACCIDENT",
+  "python": "ACCIDENT",
+  "python_conf": 0.3811
+ },
+ {
+  "video_id": "00634",
+  "gloss": "ACCIDENT",
+  "python": "ACCIDENT",
+  "python_conf": 0.9109
+ },
+ {
+  "video_id": "01386",
+  "gloss": "AFRICA",
+  "python": "AFRICA",
+  "python_conf": 0.7686
+ },
+ {
+  "video_id": "01986",
+  "gloss": "ALL",
+  "python": "ALL",
+  "python_conf": 0.4003
+ },
+ {
+  "video_id": "05727",
+  "gloss": "BEFORE",
+  "python": "BEFORE",
+  "python_conf": 0.2421
+ },
+ {
+  "video_id": "05739",
+  "gloss": "BEFORE",
+  "python": "ENJOY",
+  "python_conf": 0.396
+ },
+ {
+  "video_id": "05741",
+  "gloss": "BEFORE",
+  "python": "LAST",
+  "python_conf": 0.5828
+ },
+ {
+  "video_id": "06335",
+  "gloss": "BIRD",
+  "python": "BIRD",
+  "python_conf": 0.8806
+ },
+ {
+  "video_id": "06360",
+  "gloss": "BIRTHDAY",
+  "python": "BIRTHDAY",
+  "python_conf": 0.4112
+ },
+ {
+  "video_id": "06845",
+  "gloss": "BLUE",
+  "python": "BLUE",
+  "python_conf": 0.4901
+ }
+]

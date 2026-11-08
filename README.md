@@ -1,0 +1,721 @@
+# EchoGesture
+
+On-device, signer-independent **American Sign Language (ASL)** word
+recognition for the Samsung PRISM XR Hackathon 2026, Track 02
+("EchoGesture: Sign Language Prediction on Edge Device").
+
+One short video clip in, one ASL word (gloss) out, running fully on the
+device with an INT8 model of about 1.5 MB.
+
+**Status:** WLASL100, deployed INT8 model (4.4 MB): **84% top-1 / 96% top-5**
+on the official test clips, **78.2%** on a larger pooled set of 252 clips
+(raw-landmark baseline: 52-60%). Android app builds; not yet run on a phone.
+See [Results](#results) and [Work log](#work-log).
+
+## Contents
+
+1. [The task](#the-task)
+2. [Requirements](#requirements)
+3. [Credentials and API keys](#credentials-and-api-keys)
+4. [Datasets](#datasets)
+5. [Data pipeline: from nothing to model inputs](#data-pipeline-from-nothing-to-model-inputs)
+6. [Data report](#data-report)
+7. [Features](#features)
+8. [Model](#model)
+9. [Experiments](#experiments)
+10. [Export and prediction](#export-and-prediction)
+11. [Android app](#android-app)
+12. [Results](#results)
+13. [Repository layout](#repository-layout)
+14. [Work log](#work-log)
+
+## The task
+
+From the hackathon brief (Track 02, pages 9-11):
+
+| scoring component | weight |
+|---|---|
+| Model quantization (TFLite/ONNX, < 20 MB) | 20% |
+| Edge latency (< 50 ms) | 20% |
+| Top-1 accuracy on held-out test videos | 35% |
+| Robustness (occlusion, low light, angled signers) and HUD clarity | 25% |
+
+Targets for `results.csv`: top-1 >= 70%, P95 latency <= 50 ms, model size
+<= 20-25 MB, accuracy drop under robustness tests <= 5 points, average power
+<= 500 mW, thermal drift over 10 minutes <= 20%.
+
+Deliverables: `predict(video_path) -> dict` in `main.py`,
+`predictions.jsonl`, `results.csv`, quantized model + conversion script,
+README with reproducible setup and Docker, demo video (max 3 minutes),
+presentation. Deadline 18 Nov 2026, 11:59 PM.
+
+The evaluation is clip -> word classification, so the classifier comes
+first; conversation features are for the demo.
+
+## Requirements
+
+- Python 3.10-3.13 on macOS, Linux or Windows
+- Disk: ~6 GB for the Kaggle WLASL mirror zip, ~0.5 GB for WLASL100 videos
+  and landmarks
+- CPU is enough for WLASL100 (training takes minutes); a CUDA GPU or Apple
+  silicon (MPS) is used automatically if present
+- Headless Linux only: `apt-get install libegl1 libgles2` (MediaPipe needs EGL)
+
+Python packages (`requirements.txt`):
+
+| package | used for |
+|---|---|
+| numpy, pandas, pyarrow | arrays, manifests, Kaggle parquet files |
+| opencv-python | reading video frames |
+| mediapipe | Holistic landmarks (pose, hands, face) |
+| requests, yt-dlp, tqdm | downloading data, progress bars |
+| torch | training |
+| onnx, onnxscript, onnxruntime | export, INT8 quantization, inference in `main.py` |
+| pytest | tests |
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m pytest tests
+```
+
+The MediaPipe Holistic model (`holistic_landmarker.task`, ~14 MB) downloads
+into `models/` on first use.
+
+## Credentials and API keys
+
+**One key is used in the whole project: a Kaggle API key**, and only to
+download training data (the WLASL video mirror and the Kaggle ASL Signs
+landmarks). Nothing else needs an account, and nothing
+at inference time uses the network.
+
+- Get it at kaggle.com -> Settings -> API -> Create New Token.
+- Provide it as `KAGGLE_USERNAME` / `KAGGLE_KEY` (copy `.env.example` to
+  `.env`) or as `~/.kaggle/kaggle.json`. Both are git-ignored; never commit
+  a key.
+- `scripts/download_kaggle_wlasl.py` reads it from there and sends it as
+  HTTP basic auth to `www.kaggle.com`.
+- In our cloud development environment the key was stored as a network
+  secret of the environment instead: the environment's proxy adds it to
+  requests to `www.kaggle.com`, so the key never appeared in code, logs or
+  this repository.
+
+Downloads that need no key: WLASL metadata JSON (raw.githubusercontent.com),
+MediaPipe model (storage.googleapis.com), original WLASL video links.
+
+## Datasets
+
+All data is **American Sign Language (ASL)**.
+
+| dataset | what it is | link | used? |
+|---|---|---|---|
+| **WLASL v0.3** | Word-Level ASL: 2,000 glosses, 21,083 clips, 119 signers, collected from ASL dictionary sites and YouTube | https://github.com/dxli94/WLASL - paper: Li et al., *Word-level Deep Sign Language Recognition from Video: A New Large-scale Dataset and Methods Comparison*, WACV 2020, https://arxiv.org/abs/1910.11006 | **yes** - main training data, named in the brief |
+| **WLASL mirror on Kaggle** | WLASL clips that were still online in 2021 (11,980 videos, 5.4 GB), named by WLASL `video_id` | https://www.kaggle.com/datasets/risangbaskoro/wlasl-processed | **yes** - source of most of our videos |
+| How2Sign | continuous ASL sentences, 80+ hours | https://how2sign.github.io/ | not yet - sentence-level, the benchmark is word-level |
+| **Kaggle ASL Signs** (Google Isolated Sign Language Recognition) | 250 signs, 94,477 clips, 21 signers, MediaPipe Holistic landmarks only (no video) | https://www.kaggle.com/competitions/asl-signs (competition rules accepted with the team's Kaggle account) | **yes** - pre-training; 39 of its signs are also in WLASL100. Data terms are the competition's; organiser confirmation pending |
+| ASL Signs landmark mirror | the same landmarks as one `.npy` per clip; checked identical to the competition files | https://www.kaggle.com/datasets/kaerunantoka/asl-signs-npy | **yes** - download route, because the competition API rate-limited us |
+| ASL Citizen | 2,731 signs, 84k videos | https://www.microsoft.com/en-us/research/project/asl-citizen/ | **no** - licence allows non-commercial research only; a hackathon with prizes may not qualify |
+
+WLASL is distributed under the Computational Use of Data Agreement (C-UDA);
+see the WLASL repository. No videos or landmarks are stored in this
+repository: `data/` is git-ignored and everything in it is rebuilt by the
+scripts below.
+
+## Data pipeline: from nothing to model inputs
+
+```bash
+# 1. metadata + manifest (WLASL100 here; --vocab-file <file> for the organisers' word list)
+python scripts/prepare_wlasl.py --vocab-size 100
+
+# 2. videos: original links first, then the Kaggle mirror (needs the Kaggle key)
+python scripts/download_wlasl.py --workers 8
+python scripts/download_kaggle_wlasl.py
+python scripts/unpack_kaggle_wlasl.py
+
+# 3. keep only clips we actually have, then split by signer
+python scripts/prepare_wlasl.py --vocab-size 100 --only-available
+
+# 4. landmarks
+python scripts/extract_landmarks.py --workers 4
+
+# 5. statistics -> the "Data report" section of this README
+python scripts/data_report.py
+```
+
+### Step 1 - manifest (`scripts/prepare_wlasl.py`, `echogesture/wlasl.py`)
+
+- Downloads `WLASL_v0.3.json` from the WLASL GitHub repository.
+- Keeps the first N glosses. WLASL orders glosses by frequency, so the first
+  100 are the standard WLASL100 subset (300 -> WLASL300, etc.).
+- Writes `data/wlasl/manifest.csv`, one row per clip: `video_id, gloss,
+  label, signer_id, official_split, url, frame_start, frame_end, fps,
+  source, variation_id, split, test_signer_seen`.
+
+### Step 2 - getting the videos
+
+- `download_wlasl.py` tries every original URL (YouTube through yt-dlp,
+  everything else over HTTP). Many fail. In our run, 1,514 of 2,038 WLASL100
+  links failed: all 685 YouTube links (not reachable from our environment),
+  plus sites that are offline or have moved (aslpro, aslsearch, aslbricks,
+  handspeak, signingsavvy, aslsignbank). Failures go to
+  `data/wlasl/failed.txt`.
+- `download_kaggle_wlasl.py` + `unpack_kaggle_wlasl.py` fill in from the
+  Kaggle mirror. Result for WLASL100: **1,013 of 2,038 clips**. The mirror
+  has no YouTube clips either, so this is about what anyone can get today
+  without the original YouTube videos.
+
+### Step 3 - cleaning and splitting
+
+- Clips we could not obtain are dropped (`--only-available`).
+- Flash (`.swf`) files are skipped.
+- **Signer-independent split.** WLASL's official split puts the same people
+  in train and test: about 87% of the official WLASL100 test clips are from
+  signers who are also in train, which makes accuracy look better than it is
+  on new people. The organisers' hidden test set will be people the model has
+  never seen, so:
+  - the official test set is kept as is;
+  - validation is made of whole signers who never appear in training
+    (`signer_split`, seed 0, about 15% of clips);
+  - signers with more than 20% of all clips stay in train, so validation
+    doesn't remove a large part of the vocabulary;
+  - `test_signer_seen` marks test clips whose signer is also in train, so test
+    accuracy can be reported for seen and unseen signers separately.
+
+### Step 4 - landmarks (`scripts/extract_landmarks.py`, `echogesture/extract.py`)
+
+- MediaPipe Holistic (Tasks API, `holistic_landmarker.task`, float16) in
+  VIDEO mode, a fresh instance per clip so tracking never carries over from
+  one clip to the next. Holistic finds hands from the pose wrists instead of
+  running a palm detector every frame, which is also what we want on a phone.
+- The WLASL `frame_start` / `frame_end` range is applied (1-based, inclusive;
+  -1 = until the end).
+- 88 points per frame: 33 pose, 21 left hand, 21 right hand, and 13 face
+  points (nose, forehead, chin, eye corners, lips). Missing detections are NaN.
+- x and z are multiplied by width/height so all three axes share one unit.
+- Saved as `data/wlasl/landmarks/<video_id>.npz`, key `xyz`, shape
+  (frames, 88, 3), float16. Resumable: existing files are skipped.
+
+### Step 5 - Kaggle ASL Signs for pre-training
+
+```bash
+python scripts/download_kaggle_asl.py --limit 1   # gets train.csv (labels); needs the rules accepted
+python scripts/download_gislr_mirror.py           # 9.3 GB zip streamed -> ~1.3 GB of .npz
+python scripts/prepare_kaggle_asl.py              # aspect fix + signer split
+python scripts/pretrain.py --out runs/pretrain
+```
+
+- The competition's per-file API allows only a few hundred requests a day
+  (we were blocked after 367 of 94,477 files, bulk download included), so the
+  landmarks come from a public mirror. We compared a clip present in both:
+  identical (maximum difference 0.0).
+- The mirror zip is streamed; each clip is cut to our 88 points as it
+  arrives, so the 9.3 GB never sits on disk.
+- **Aspect-ratio fix.** Kaggle coordinates are normalised by width and height
+  separately (portrait phone videos), ours are in one unit. Measured with
+  face proportions (eye width / face height): 0.499 in WLASL, 0.718 in
+  Kaggle, so Kaggle x was ~1.44x too wide. `fix_aspect` estimates the factor
+  per clip from the face and rescales x and z (fallback 0.695).
+- Signer split: 2 of the 21 signers are held out for validation.
+- Pre-training learns all 250 signs; fine-tuning on WLASL100 keeps the
+  encoder and input normalisation and trains a new classifier
+  (`train.py --init runs/pretrain/best.pt`). Optionally up to 20 Kaggle clips
+  per shared gloss are added to WLASL training (`--extra-manifest`).
+
+### Step 6 - features (computed on the fly; see [Features](#features))
+
+## Data report
+
+Filled in by `python scripts/data_report.py` from the files in `data/`.
+
+<!-- data-report:start -->
+**WLASL100**
+
+Coverage:
+
+- Clips listed in WLASL for these 100 glosses: **2038**
+- Clips we could obtain (Kaggle mirror + direct links): **1013**
+- Clips with landmarks extracted: **1013**
+
+| split | clips | signers | glosses |
+|---|---|---|---|
+| train | 761 | 54 | 100 |
+| val | 152 | 9 | 75 |
+| test | 100 | 34 | 72 |
+
+Clips per gloss in train: min 3, median 7, max 13
+
+Clips by source site:
+
+| host | clips |
+|---|---|
+| www.signingsavvy.com | 225 |
+| signstock.blob.core.windows.net | 196 |
+| media.asldeafined.com | 131 |
+| www.aslsearch.com | 114 |
+| aslsignbank.haskins.yale.edu | 104 |
+| s3-us-west-1.amazonaws.com | 99 |
+| media.spreadthesign.com | 91 |
+| aslbricks.org | 45 |
+| elementalaslconcepts.weebly.com | 8 |
+
+Landmark quality (MediaPipe Holistic):
+
+- Frames per clip: median 65, min 19, max 195
+- Pose found: 100% of frames on average
+- At least one hand found: 66% of frames on average (low values are mostly rest pose at the start/end of a clip)
+- Clips where no hand was ever found: 0
+
+<!-- data-report:end -->
+
+## Features
+
+`echogesture/features.py` turns raw landmarks (T, 88, 3) into five groups:
+
+| group | what it captures | not affected by |
+|---|---|---|
+| handshape | finger configuration in the hand's own frame, fingertip distances, finger joint angles | camera angle, distance, hand size |
+| orientation | palm normal and finger direction | camera roll, distance |
+| location | hands relative to chest, nose, mouth and each other | signer position and size |
+| motion | wrist velocity, speed, acceleration, finger movement | position and size |
+| nonmanual | elbows, head, mouth opening and width | position and size |
+
+plus a quality group: which hand was seen, which values were interpolated,
+whether the body was found, whether the clip was mirrored.
+
+Processing steps:
+
+1. Each hand is assigned to the nearest pose wrist. Handedness labels flip on
+   rotated or mirrored views; the pose skeleton is steadier.
+2. One body frame per clip: origin between the shoulders, unit = shoulder
+   width, shoulder line made level (roll) and turned to face the camera (yaw,
+   capped at 60 degrees). It is estimated once per clip (median over time), so
+   real body movement during the sign is kept.
+3. Left-handed signing is mirrored so the dominant hand is always in the same
+   slot. In ASL the mirrored sign is the same sign.
+4. Tracking gaps of up to 6 frames are interpolated and flagged; longer gaps
+   stay "not seen" instead of inventing motion.
+5. `echogesture/sampling.py` trims the rest pose at both ends and picks 32
+   frames, more of them where the hands move.
+
+The tests in `tests/test_features.py` check that the features don't change
+when the camera is rotated, moved or zoomed, when the signer is left-handed,
+or when MediaPipe swaps the hand labels, and that missing hands never
+produce NaNs.
+
+## Model
+
+`echogesture/model.py` - EchoNet, about 1.3M parameters (1.5 MB as INT8):
+
+1. one small projection per feature group;
+2. quality gate: for every frame, the quality flags decide how much each
+   group is trusted (a hand that wasn't seen shouldn't drive the prediction);
+3. 4 depthwise-convolution blocks (local movement) and 2 attention blocks
+   (the whole sign) over 32 frames;
+4. mean pooling -> classifier.
+
+Only Conv1d, Linear, LayerNorm/BatchNorm and attention are used, so it exports
+to ONNX/TFLite and quantizes to INT8.
+
+`echogesture/losses.py` - confusion-aware loss: keeps track of which signs
+the model mixes up and adds a margin so it has to separate them clearly.
+Training only; no cost at inference.
+
+`echogesture/augment.py` - training augmentation that matches what test
+videos can do: camera angle (yaw +-25, pitch/roll +-10 degrees), hand size
+and arm length (+-15% / +-10%), signing speed (0.8-1.25x), one hand lost for
+5-40% of the clip, dropped frames, tracker noise.
+
+## Experiments
+
+All variants have about the same number of parameters (1.27-1.28M), so
+differences come from the input and fusion, not model size.
+
+| run | input | fusion | extra |
+|---|---|---|---|
+| E1 | raw landmarks (centred, scaled) | flat | - |
+| E2 | canonical features | flat | - |
+| E3 | canonical features | per-group projections, summed | - |
+| E4 | canonical features | quality-gated | - |
+| E5 | canonical features | quality-gated | confusion margin |
+
+```bash
+python scripts/train.py --mode raw --fusion flat --out runs/e1
+python scripts/train.py --fusion flat  --out runs/e2
+python scripts/train.py --fusion sum   --out runs/e3
+python scripts/train.py --fusion gated --out runs/e4
+python scripts/train.py --fusion gated --confusion-margin 1.0 --out runs/e5
+```
+
+Each run writes `best.pt`, `metrics.jsonl` (per epoch) and
+`confusions.json` (most confused sign pairs on validation).
+
+Check the code without any data, using synthetic signers:
+
+```bash
+python scripts/make_synthetic.py
+python scripts/train.py --manifest data/synthetic/manifest.csv --landmarks data/synthetic/landmarks --epochs 15 --out runs/smoke
+```
+
+## Export and prediction
+
+```bash
+python scripts/export_onnx.py --run runs/e5
+cp runs/e5/model_int8.onnx runs/e5/model_meta.json models/
+python main.py --videos path/to/clips --out results/predictions.jsonl
+```
+
+`export_onnx.py` exports to ONNX, quantizes to INT8 (static, per-channel,
+calibrated on 300 training clips) and reports size, top-1/top-5 and latency
+for FP32 and INT8.
+
+`main.py` output, one line per clip:
+
+```json
+{"clip_id": "test_0412", "prediction": "HAPPY", "top5": ["HAPPY", "HAND", "HOUSE", "HELP", "HOME"], "confidence": 0.81, "latency_ms": 23.4}
+```
+
+## Android app
+
+`android/` - live recognition on the phone, fully offline.
+
+```
+camera (CameraX) -> MediaPipe Holistic (GPU, CPU fallback) -> 88 landmarks
+  -> Segmenter (finds where a sign starts and ends)
+  -> Features.kt (Kotlin port of features.py / sampling.py)
+  -> INT8 ONNX model (ONNX Runtime) -> HUD caption, optional speech
+```
+
+- **Same numbers as Python.** `Features.kt` is a line-by-line port of the
+  Python feature pipeline. `scripts/export_golden.py` exports 11 cases (real
+  WLASL clips, left-handed, hidden hand, mirrored camera, no body detected, a
+  Kaggle clip) and `FeaturesTest` checks the Kotlin output against them:
+  worst relative error 9e-6.
+- **Provably offline.** MediaPipe's library asks for INTERNET and
+  ACCESS_NETWORK_STATE; the app manifest removes both. The installed app's
+  only permission is the camera (`aapt2 dump permissions` on the APK).
+- **HUD.** Caption at the top, away from the signer's hands. Green >= 60%
+  confidence, amber 35-60%, grey below 35% shown as "WORD?" with the two
+  alternatives. Transcript of the last words, skeleton overlay, status line
+  (signing/listening, hands seen, fps, landmark and model time). Optional
+  offline text-to-speech.
+- **Power saving.** When nobody has signed for 2 seconds, only every third
+  camera frame is processed.
+- **Benchmark mode** (Bench button). Logs landmark time per frame, feature +
+  model time per sign, whole-phone power (battery current x voltage; unplug
+  the phone) and thermal status every second. Stop it to get a summary and
+  `results_device.csv` in the app's files folder
+  (`Android/data/com.echogesture.app/files/bench_*`). Thermal drift = change
+  in landmark latency between the first and last minute of a 10-minute run.
+
+- **Test mode** (Test button). Runs whole videos through the same on-device
+  pipeline - no signer needed, works on the emulator:
+  - *Built-in WLASL test clips*: 10 clips from the test split
+    (`models/test_clips.json` lists them with the true word and the word our
+    Python pipeline predicts with the deployed ensemble). The result shows, per clip,
+    true word -> app prediction, the Python prediction, frames, landmark
+    time per frame and model time, plus "Correct" and "Same as Python"
+    counts - an end-to-end check that the phone behaves like the computer.
+  - *Pick a video*: any video on the device, e.g. a friend signing recorded
+    with the phone camera.
+
+### Trying it without a phone (Android emulator)
+
+The cloud machine we develop on has no hardware virtualisation, so the
+emulator has to run on a laptop:
+
+1. Android Studio -> Device Manager -> create a phone (e.g. Pixel 8) with an
+   **x86_64** system image, API 34 or 35.
+2. Edit the device -> Show Advanced Settings -> Camera -> Back: **Webcam0**
+   (your laptop webcam becomes the phone camera).
+3. Start it and drag `app-x86_64-release.apk` onto the emulator window.
+4. Use **Test -> Built-in WLASL test clips**, or sign in front of the webcam.
+
+Emulator latency and power numbers are not meaningful (it runs on the
+laptop's CPU); use a real phone for those.
+
+Build (Android SDK 35, JDK 17+):
+
+```bash
+cd android
+./gradlew :app:testDebugUnitTest     # Kotlin vs Python parity test
+./gradlew :app:assembleRelease       # APKs in app/build/outputs/apk/release/
+adb install app/build/outputs/apk/release/app-arm64-v8a-release.apk
+```
+
+The build copies `models/model_int8.onnx` and `models/model_meta.json` into
+the app and downloads the MediaPipe Holistic model once. One APK per CPU
+type: `arm64-v8a` (Galaxy A36, recent Galaxy Tab A), `armeabi-v7a` (older
+32-bit devices), `x86_64` (Android emulator - fine for checking the UI, not
+for latency or power numbers).
+
+## Results
+
+<!-- results:start -->
+WLASL100, trained on CPU, seed 0. **Pooled** = 252 clips: validation (9
+signers never seen in training) + WLASL's official test clips we could
+obtain. 95% confidence intervals are Wilson intervals.
+
+### Deployed model: INT8 ensemble of E4 + E13 + E12
+
+| | pooled top-1 | 95% CI | pooled top-5 | macro top-1 | **official test top-1** | test top-5 | size | latency P95 |
+|---|---|---|---|---|---|---|---|---|
+| E1 raw-landmark baseline (FP32) | 52.0% | 45.8-58.1% | - | 57.7% | 60.0% | 87% | - | - |
+| E4 alone, INT8 | 72.2% | 66.4-77.4% | 89.3% | 78.9% | 75.0% | 94% | 1.5 MB | 2.7 ms |
+| E4 + E12 ensemble, INT8 (previous) | 76.6% | 71.0-81.4% | 93.3% | 81.9% | 83.0% | 95% | 3.0 MB | 5.7 ms |
+| **E4 + E13 + E12 ensemble, INT8** | **78.2%** | **72.7-82.8%** | **92.9%** | **82.7%** | **84.0%** | **96%** | **4.4 MB** | **9.2 ms** |
+
+These are the numbers of the exact file that ships (`models/model_int8.onnx`,
+`scripts/evaluate.py --onnx`). Latency is the classifier only, 1 CPU thread
+on a cloud machine; on-phone numbers come from the app's benchmark mode.
+Members: E4 (WLASL only), E13 (WLASL + landmarks from degraded video),
+E12 (pre-trained on Kaggle ASL Signs). Caveat: the ensemble was chosen by
+looking at the pooled clips, so its pooled number is slightly optimistic.
+
+### Ablation: what each idea adds (PyTorch FP32, pooled 252 clips)
+
+| run | adds | top-1 | 95% CI | macro top-1 |
+|---|---|---|---|---|
+| E1 | raw landmarks | 52.0% | 45.8-58.1% | 57.7% |
+| E2 | canonical (signer-invariant) features | **69.4%** (+17.4) | 63.5-74.8% | 76.1% |
+| E3 | per-group projections | 71.8% (+2.4) | 66.0-77.0% | 78.4% |
+| E4 | quality gate | **73.0%** (+1.2) | 67.2-78.1% | 79.8% |
+| E5 | confusion-margin loss | 72.2% (-0.8) | 66.4-77.4% | 77.6% |
+| E11 | E4 pre-trained on Kaggle ASL Signs | 70.2% | 64.3-75.6% | 77.2% |
+| E12 | E11 + 20 Kaggle clips per shared word | 71.8% | 66.0-77.0% | 77.4% |
+| **E4+E12** | ensemble (average probabilities) | **75.8%** | 70.1-80.7% | 81.9% |
+
+- **Canonical features are the main contribution (+17 points).** Per-group
+  projections and the quality gate add ~3.6 more. The confusion-margin loss
+  doesn't help here.
+- **Pre-training helps the words it has seen and hurts the rest.** On the
+  39 words shared with Kaggle ASL Signs, E12 scores 78.4% vs E4's 72.2%; on
+  the other 61 words, 67.7% vs 73.5%. The two models make different
+  mistakes, so their average beats both (+2.8 points over E4).
+- Pre-training: 6 epochs on 84,925 clips (19 signers), 62.7% top-1 on 250
+  signs for 2 unseen signers.
+- **Diagnosis:** every model scores ~99% on its own training clips vs
+  70-77% on new signers - the limit is data (7 clips per word), not model
+  size. Weakest words: COLOR, FINE, RIGHT, GO, SECRETARY.
+- INT8: only Conv/MatMul/Gemm are quantised; softmax and averaging stay in
+  float (quantising those cost the ensemble 2 points).
+
+### More experiments (E6-E10, each one change on top of E4)
+
+| run | change | pooled top-1 | 95% CI | macro | test top-1 |
+|---|---|---|---|---|---|
+| E4 | (base) | 73.0% | 67.2-78.1% | 79.8% | 75% |
+| E6 | stronger view/occlusion augmentation | 69.0% | 63.1-74.4% | 71.7% | 64% |
+| E7 | + supervised contrastive loss, class-balanced batches | 72.2% | 66.4-77.4% | 78.7% | 76% |
+| E8 | 48 frames instead of 32 | 73.4% | 67.6-78.5% | 79.3% | 75% |
+| E9 | more dropout + weight decay | 67.9% | 61.9-73.3% | 73.6% | 66% |
+| E10 | bigger model (2.5M params) | 73.4% | 67.6-78.5% | 79.5% | 75% |
+
+None beats E4 by more than noise. A bigger model or longer input doesn't
+help, more regularisation hurts, and contrastive learning doesn't separate
+the confused pairs on this little data - consistent with the diagnosis that
+the limit is data, not the model. E6 trades 4 points of clean accuracy for
+robustness (below).
+
+### Robustness
+
+Accuracy on the same 252 pooled clips, and the drop in points vs clean.
+
+**Landmark-level** (landmarks changed directly):
+
+| model | clean | side view 40 deg | hand hidden 30% | 20% frames dropped | landmark noise | mean drop |
+|---|---|---|---|---|---|---|
+| E1 raw | 52.0% | -7.1 | -4.8 | -1.2 | -0.8 | 3.5 |
+| E4 | 73.0% | -7.9 | -4.4 | -1.6 | -2.0 | 4.0 |
+| E6 strong aug | 69.0% | **-2.8** | **-3.6** | -0.8 | -4.4 | **2.9** |
+| **E4+E12 (deployed)** | 75.8% | -8.7 | -7.1 | +1.2 | -5.9 | 5.2 |
+| E6+E12 | 75.8% | -9.1 | -7.9 | -0.4 | -5.2 | 5.7 |
+
+**Video-level** (pixels changed, then MediaPipe re-run - closest to real
+conditions):
+
+| model | clean | dark room (25% light + noise) | blur (Gaussian 9 px) | camera tilted 15 deg | low resolution (35%) | mean drop |
+|---|---|---|---|---|---|---|
+| E1 raw | 52.0% | -2.0 | -6.7 | -6.0 | -7.1 | 5.5 |
+| E4 | 73.0% | -6.3 | -16.7 | -1.6 | -14.3 | 9.7 |
+| E6 strong aug | 69.0% | -2.0 | -17.9 | -2.0 | -17.1 | 9.7 |
+| **E4+E12 (deployed)** | 75.8% | **-3.6** | -17.5 | **+0.8** | -11.1 | 7.8 |
+| E6+E12 | 75.8% | -4.4 | -18.2 | -0.4 | -14.7 | 9.4 |
+
+- **Dark rooms and tilted cameras are handled well** (deployed model: -3.6
+  and +0.8 points); the canonical features undo the tilt.
+- **Blur and low resolution are the weak spot** (-11 to -18 points). Hands
+  are still found (64-68% of frames vs 72% clean) but finger positions get
+  unreliable, so handshape features mislead the model.
+- These two tests are harsher than a phone camera: WLASL videos are small
+  (median 370 px tall), so 35% scale leaves ~130 px. Real phone input is
+  720-1080 px. Still, the deployed model misses the <= 5 point target on
+  video-level tests (mean drop 7.8).
+### Fix: video-level augmentation (E13)
+
+E13 = E4 trained with landmarks extracted from two randomly degraded copies
+of every training video (blur 5-13 px, 30-60% resolution, 15-50% light, or
+blur + low resolution; strengths differ from the fixed test settings;
+`scripts/make_degraded.py`). Each training sample uses a degraded copy half
+of the time.
+
+| model | clean | dark | blur | tilted 15 deg | low res | video mean drop | landmark mean drop |
+|---|---|---|---|---|---|---|---|
+| E4 | 73.0% | 66.7% | 56.4% | 71.4% | 58.7% | 9.7 | 4.0 |
+| E13 | 71.8% | 71.0% | 60.3% | 70.6% | 61.9% | 5.9 | 3.4 |
+| E4+E12 (previous) | 75.8% | 72.2% | 58.3% | 76.6% | 64.7% | 7.8 | 5.2 |
+| **E4+E13+E12 (deployed)** | **76.6%** | **73.4%** | **63.5%** | **77.8%** | **66.7%** | **6.3** | **4.2** |
+
+- E13 alone cuts the video-level drop from 9.7 to 5.9 points (dark -6.3 ->
+  -0.8) for -1.2 points clean (within noise).
+- The deployed three-model ensemble is at least as accurate as the previous
+  one in every condition; landmark-level mean drop 4.2 (target <= 5).
+  Video-level mean drop 6.3 is still above 5, driven by blur (-13.1) and
+  low resolution (-9.9) on WLASL's small videos.
+- Robustness numbers are for the PyTorch models; the INT8 file matches them
+  within ~1 point on clean data.
+
+Reproduce:
+
+```bash
+python scripts/train.py --fusion gated --out runs/e4
+python scripts/pretrain.py --epochs 6 --out runs/pretrain
+python scripts/train.py --fusion gated --init runs/pretrain/best.pt --lr 5e-4 \
+    --extra-manifest data/kaggle_asl/manifest_split.csv \
+    --extra-landmarks data/kaggle_asl/landmarks_fixed --extra-per-class 20 --out runs/e12
+python scripts/make_degraded.py --copies 2
+python scripts/train.py --fusion gated --alt-landmarks data/wlasl/landmarks_aug1 data/wlasl/landmarks_aug2 --out runs/e13
+python scripts/export_onnx.py --run runs/e4 runs/e13 runs/e12 --out runs/ens_e4_e13_e12
+python scripts/evaluate.py --run runs/ens_e4_e13_e12 --onnx --split valtest
+python scripts/evaluate.py --run runs/ens_e4_e13_e12 --onnx --split test
+cp runs/ens_e4_e13_e12/model_int8.onnx runs/ens_e4_e13_e12/model_meta.json models/
+```
+<!-- results:end -->
+
+## Repository layout
+
+```
+main.py                     predict() + batch predictions.jsonl
+echogesture/
+  layout.py                 the 88-point landmark layout
+  extract.py                video -> landmarks (MediaPipe Holistic)
+  features.py               landmarks -> canonical feature groups
+  sampling.py               rest-pose trimming, motion-adaptive frame sampling
+  inputs.py                 features -> model input (shared by train/export/predict)
+  augment.py                training augmentation
+  model.py                  EchoNet
+  losses.py                 confusion-aware loss
+  data.py                   PyTorch dataset
+  wlasl.py                  WLASL manifest and signer split
+  kaggle_asl.py             Kaggle ASL Signs -> our layout, aspect fix
+  corruptions.py            video and landmark corruptions for robustness tests
+scripts/
+  prepare_wlasl.py          manifest + split
+  download_wlasl.py         original WLASL links
+  download_kaggle_wlasl.py  Kaggle WLASL mirror (needs Kaggle key)
+  download_kaggle_asl.py    Kaggle ASL Signs, per file (rate-limited) + train.csv
+  download_gislr_mirror.py  Kaggle ASL Signs landmarks, streamed from the mirror
+  prepare_kaggle_asl.py     aspect fix + signer split for ASL Signs
+  pretrain.py               pre-training on ASL Signs
+  robustness.py             accuracy under corruptions
+  unpack_kaggle_wlasl.py    copy needed clips out of the mirror
+  extract_landmarks.py      landmarks for every clip
+  data_report.py            data statistics -> this README
+  export_golden.py          golden cases for the Android parity test
+  train.py                  training (E1-E5)
+  evaluate.py               accuracy on a split, seen vs unseen signers
+  export_onnx.py            ONNX + INT8 + latency report
+  make_synthetic.py         synthetic signers for testing the code
+  convert_kaggle_asl.py     optional external data
+tests/                      feature and model tests
+android/                    Android app (Kotlin): camera, HUD, benchmark mode
+  app/src/main/java/com/echogesture/core/   feature pipeline port, segmenter
+  app/src/main/java/com/echogesture/app/    camera, MediaPipe, ONNX Runtime, HUD, stats
+  app/src/test/                             parity test against Python golden cases
+```
+
+## Work log
+
+What was done, in order, and why (2026).
+
+**7 Nov - problem analysis**
+- Read the Track 02 brief; noted scoring, targets, deliverables and the
+  18 Nov deadline (see [The task](#the-task)).
+- Decided to use keypoints (MediaPipe) + a small model rather than an RGB
+  video network: smaller, faster, less sensitive to background and lighting.
+
+**7 Nov - data pipeline** (commit `376487b`)
+- WLASL manifest with a signer-independent validation split. Finding: about
+  87% of WLASL100's official test clips come from signers also in train.
+- Landmark extraction, canonical features, motion-adaptive sampling, tests.
+- Checked on a real WLASL clip ("BOOK"): pose found in 100% of frames, hands
+  in 51% (hands at rest are out of frame); Holistic ~48 ms/frame on a cloud
+  CPU, features 5 ms per clip.
+
+**7 Nov - model** (commit `1f0e62b`)
+- EchoNet, confusion-aware loss, augmentation, E1-E5 training script.
+- ONNX export with INT8 quantization: 1.48 MB.
+- `main.py` with `predict()`. Code tested on synthetic signers only.
+
+**7 Nov - real data** (commits `88799f9`, `112b832`)
+- Original links gave 524 of 2,038 WLASL100 clips. Downloaded the Kaggle
+  mirror (5.4 GB) with the team's Kaggle key -> 1,013 clips in total.
+- Re-split over available clips: train 761 / val 152 (unseen signers) /
+  test 100.
+- Fixed the extraction scripts for macOS process spawning.
+
+**7 Nov - first training on real data**
+- Landmarks extracted for all 1,013 clips (pose 100% of frames, a hand in
+  66%; every clip has hands at some point).
+- E1 raw baseline: 46.7% val / 60.0% test top-1. E5 full model: 71.1% val /
+  74.0% test top-1, 93% test top-5.
+- INT8 export: 1.5 MB, no accuracy loss, 2.7 ms P95 classifier latency on CPU.
+- Added `scripts/evaluate.py` (test accuracy split by seen/unseen signers).
+
+**7 Nov - Android app**
+- Kotlin port of the feature pipeline, checked against 11 Python golden cases
+  (worst relative error 9e-6).
+- CameraX + MediaPipe Holistic + ONNX Runtime app with HUD, speech, power
+  saving and a benchmark mode for latency, power and thermal numbers.
+- Found and removed the INTERNET permission added by MediaPipe; the APK only
+  asks for the camera.
+- Release APKs build (arm64: 58 MB including the 14 MB landmark model and
+  10 test clips). Not yet run on a phone.
+- In-app test mode with built-in WLASL test clips and Python predictions
+  for comparison; emulator instructions (this machine has no KVM, so the
+  emulator can't run here).
+
+**7 Nov - ablations, pre-training, ensemble**
+- E2-E4 ablations: canonical features +17.4 points, per-group projections +
+  quality gate +3.6, confusion loss no gain.
+- Diagnosis: ~99% train vs ~72% new signers -> data-limited.
+- Kaggle ASL Signs: competition API rate-limited after 367 files; used a
+  verified mirror (94,477 clips). Found and fixed a 1.44x horizontal stretch
+  in its coordinates (aspect ratio).
+- Pre-training (E11/E12) helps shared words (+6.2) but hurts others; the
+  E4+E12 ensemble combines both: 76.6% pooled, 83% test, INT8 3.0 MB.
+- Selective INT8 quantisation (only Conv/MatMul/Gemm) to keep the ensemble
+  accurate. Shipped in models/ and the Android app.
+- E6-E10 paused to give pre-training the CPU; resumed on 8 Nov.
+
+**8 Nov - E6-E10 and robustness**
+- E6-E10 rebased on E4: none beats E4 beyond noise (bigger model, longer
+  input, contrastive loss, regularisation, stronger augmentation).
+- Landmark-level robustness: deployed model mean drop 5.2 points; E6's
+  augmentation halves the side-view drop.
+- Video-level robustness: dark -3.6, tilt +0.8, but blur -17.5 and low
+  resolution -11.1 (mean 7.8) - finger landmarks degrade. Next: train on
+  landmarks from degraded videos.
+- E13 (video-level augmentation) and the E4+E13+E12 ensemble: 78.2%
+  pooled / 84% test INT8 (4.4 MB), dark-room drop -3.2, landmark-level mean
+  drop 4.2. Shipped to models/ and the app.
+- The Android emulator can't run on the cloud machine (no KVM); options are
+  a laptop emulator or Samsung Remote Test Lab (real Galaxy phones in the
+  browser).
+
+**Next**
+- Run the app on the Galaxy A36 (test mode + benchmark) for real latency,
+  power and thermal numbers.
+- Video-level robustness tests; E6-E10.
+- Robustness benchmark (dark, occlusion, camera angle).
+- TFLite export for Samsung GPU/NPU; on-device latency, power and thermal.
+- `results.csv` generator, Dockerfile, demo app.
