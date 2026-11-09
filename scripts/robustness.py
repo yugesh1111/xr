@@ -48,12 +48,12 @@ def accuracy(model, cfg, clips, y):
         return float((model(X).argmax(1).numpy() == y).mean())
 
 
-def corrupt_video_job(row, root, name):
+def corrupt_video_job(row, root, name, enhance=False):
     from echogesture.extract import extract_video
-    out = root / f"landmarks_{name}" / f"{row['video_id']}.npz"
+    out = root / f"landmarks_{name}{'_enh' if enhance else ''}" / f"{row['video_id']}.npz"
     if not out.exists():
         src = next((root / "raw").glob(f"{row['video_id']}.*"))
-        xyz = extract_video(src, int(row["frame_start"]), int(row["frame_end"]), transform=C.VIDEO[name])
+        xyz = extract_video(src, int(row["frame_start"]), int(row["frame_end"]), transform=C.VIDEO[name] if name != "clean" else None, enhance=enhance)
         np.savez_compressed(out, xyz=xyz.astype(np.float16))
     return out
 
@@ -64,6 +64,9 @@ def main():
     ap.add_argument("--level", choices=["landmark", "video"], default="landmark")
     ap.add_argument("--root", default="data/wlasl")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--enhance", action="store_true",
+                    help="video level: run the deployed pipeline (adaptive sharpening before MediaPipe), "
+                         "clean included; writes robustness_video_enhanced.json")
     args = ap.parse_args()
     root = Path(args.root)
 
@@ -79,11 +82,14 @@ def main():
             conditions[name] = {v: fn(x, rng) for v, x in clean.items()}
     else:
         rows = df[["video_id", "frame_start", "frame_end"]].to_dict("records")
-        for name in C.VIDEO:
-            (root / f"landmarks_{name}").mkdir(exist_ok=True)
+        names = (["clean"] if args.enhance else []) + list(C.VIDEO)
+        suffix = "_enh" if args.enhance else ""
+        for name in names:
+            (root / f"landmarks_{name}{suffix}").mkdir(exist_ok=True)
             with ProcessPoolExecutor(args.workers) as pool:
-                list(tqdm(pool.map(partial(corrupt_video_job, root=root, name=name), rows), total=len(rows), desc=name))
-            conditions[name] = {v: np.load(root / f"landmarks_{name}" / f"{v}.npz")["xyz"].astype(np.float32)
+                list(tqdm(pool.map(partial(corrupt_video_job, root=root, name=name, enhance=args.enhance), rows),
+                          total=len(rows), desc=name))
+            conditions[name] = {v: np.load(root / f"landmarks_{name}{suffix}" / f"{v}.npz")["xyz"].astype(np.float32)
                                 for v in df.video_id}
 
     results = {}
@@ -98,7 +104,7 @@ def main():
             res[name] = round(accuracy(model, cfg, clips, y), 4)
         results["+".join(Path(r).name for r in run.split("+"))] = res
 
-    out = Path("results") / f"robustness_{args.level}.json"
+    out = Path("results") / f"robustness_{args.level}{'_enhanced' if args.enhance else ''}.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"clips": len(df), "results": results}, indent=1))
     names = list(conditions)

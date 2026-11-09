@@ -2,6 +2,7 @@ package com.echogesture.app
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.echogesture.core.Enhance
 import com.echogesture.core.Layout
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
@@ -11,9 +12,14 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.holisticlandmarker.HolisticLandmarker
 
 /** Camera frame -> 88 landmarks, same layout and units as echogesture/extract.py. */
-class Landmarks(context: Context, gpu: Boolean) : AutoCloseable {
+class Landmarks(context: Context, gpu: Boolean, private val enhance: Boolean = true) : AutoCloseable {
     private val landmarker: HolisticLandmarker
     private var lastTs = -1L
+    private var pixels = IntArray(0)
+
+    /** Frames sharpened so far (blurry and not dark, see core/Enhance.kt). */
+    var sharpened = 0L
+        private set
 
     init {
         val base = BaseOptions.builder()
@@ -31,7 +37,7 @@ class Landmarks(context: Context, gpu: Boolean) : AutoCloseable {
     fun detect(bitmap: Bitmap, timestampMs: Long): FloatArray {
         val ts = maxOf(timestampMs, lastTs + 1)
         lastTs = ts
-        val res = landmarker.detectForVideo(BitmapImageBuilder(bitmap).build(), ts)
+        val res = landmarker.detectForVideo(BitmapImageBuilder(prepare(bitmap)).build(), ts)
         val out = FloatArray(Layout.N_POINTS * 3) { Float.NaN }
         fun put(at: Int, lms: List<NormalizedLandmark>?, idx: IntArray? = null) {
             if (lms.isNullOrEmpty()) return
@@ -47,6 +53,20 @@ class Landmarks(context: Context, gpu: Boolean) : AutoCloseable {
         if (res.faceLandmarks().size >= 468) put(Layout.FACE, res.faceLandmarks(), Layout.FACE_IDX)
         val aspect = bitmap.width.toFloat() / bitmap.height
         for (n in 0 until Layout.N_POINTS) { out[n * 3] *= aspect; out[n * 3 + 2] *= aspect }
+        return out
+    }
+
+    /** Adaptive sharpening, same rule as echogesture/enhance.py. */
+    private fun prepare(bitmap: Bitmap): Bitmap {
+        if (!enhance) return bitmap
+        val w = bitmap.width; val h = bitmap.height
+        if (pixels.size != w * h) pixels = IntArray(w * h)
+        bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+        if (!Enhance.apply(pixels, w, h)) return bitmap
+        sharpened++
+        val out = if (bitmap.isMutable && bitmap.config == Bitmap.Config.ARGB_8888) bitmap
+                  else bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        out.setPixels(pixels, 0, w, 0, 0, w, h)
         return out
     }
 

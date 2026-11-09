@@ -93,13 +93,22 @@ def read_video(path, frame_start=1, frame_end=-1, transform=None):
         cap.release()
 
 
-def extract_video(path, frame_start=1, frame_end=-1, model_path=None, transform=None):
+def extract_video(path, frame_start=1, frame_end=-1, model_path=None, transform=None, enhance=False):
     """Return (T, 88, 3) float32 array for a clip.
+
+    enhance=True applies echogesture.enhance (adaptive sharpening) to each frame
+    after `transform`, as the deployed pipeline (main.py, the app) does. The
+    training landmarks were extracted without it; it almost never fires on clean video.
 
     A fresh landmarker per clip: in VIDEO mode MediaPipe tracks across frames,
     and we don't want tracking state leaking from one clip into the next."""
     with LandmarkExtractor(model_path) as ex:
-        frames = [ex.frame(rgb, ts) for rgb, ts in read_video(path, frame_start, frame_end, transform)]
+        if enhance:
+            from .enhance import enhance as _enh
+            tf = (lambda r: _enh(transform(r))) if transform else _enh
+        else:
+            tf = transform
+        frames = [ex.frame(rgb, ts) for rgb, ts in read_video(path, frame_start, frame_end, tf)]
     if not frames:
         return np.zeros((0, layout.N_POINTS, 3), dtype=np.float32)
     return np.stack(frames)

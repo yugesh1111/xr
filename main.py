@@ -46,7 +46,7 @@ def predict(video_path: str) -> dict:
     sess, meta = _load()
     clip_id = Path(video_path).stem
     t0 = time.perf_counter()
-    xyz = extract_video(video_path)
+    xyz = extract_video(video_path, enhance=True)
     landmark_ms = (time.perf_counter() - t0) * 1000
     frames = len(xyz)
     timing = {"frames": frames, "landmark_ms_total": round(landmark_ms, 1),
