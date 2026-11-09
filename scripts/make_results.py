@@ -13,8 +13,9 @@ Every number is read from a file another step wrote, so nothing is typed by hand
     --robustness  results/robustness_landmark.json and/or robustness_video.json
     --run-key     key of the shipped model inside the robustness files, e.g. e4+e13+e12
     --robustness-level  which robustness file goes into the brief's single row
-                  (default video: pixels degraded, then MediaPipe re-run - the
-                  closer-to-real and stricter of the two)
+                  (default video: pixels degraded, then MediaPipe re-run;
+                  video_enhanced: the same through the deployed pipeline,
+                  i.e. with adaptive sharpening - robustness.py --enhance)
     --device      results_device.csv saved by the app's Bench button (phone)
     --predictions predictions.jsonl from main.py (laptop/CPU latency, for reference)
 
@@ -104,6 +105,9 @@ def main():
             f"mean over conditions; worst {wname} {worst:.1f}")
         if level == args.robustness_level:
             brief["accuracy_drop_robustness"] = (mean, "offline evaluation (cloud CPU)",
+                                                 "video-level corruptions through the deployed pipeline "
+                                                 "(adaptive sharpening + MediaPipe), mean over conditions"
+                                                 if level == "video_enhanced" else
                                                  f"{level}-level corruptions, mean over conditions")
 
     dev = {}
