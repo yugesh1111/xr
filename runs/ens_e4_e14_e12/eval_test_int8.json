@@ -1,0 +1,40 @@
+{
+ "run": "ens_e4_e14_e12",
+ "split": "test",
+ "tta": 1,
+ "clips": 100,
+ "top1": 0.83,
+ "top1_95ci": [
+  0.7445,
+  0.8911
+ ],
+ "top5": 0.96,
+ "macro_top1": 0.8472,
+ "classes": 72,
+ "weakest_classes": {
+  "BOWLING": 0.0,
+  "COLOR": 0.0,
+  "FINE": 0.0,
+  "SECRETARY": 0.0,
+  "STUDY": 0.0,
+  "RIGHT": 0.0,
+  "YES": 0.0,
+  "BEFORE": 0.33,
+  "LIKE": 0.5,
+  "DARK": 0.5
+ },
+ "per_signer_top1": {
+  "signers": 34,
+  "min": 0.0,
+  "median": 1.0
+ },
+ "seen_signers": {
+  "clips": 82,
+  "top1": 0.8415
+ },
+ "unseen_signers": {
+  "clips": 18,
+  "top1": 0.7778
+ },
+ "model": "int8 onnx"
+}

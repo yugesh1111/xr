@@ -1,0 +1,32 @@
+{
+ "run": "h100_ens14",
+ "split": "holdout",
+ "tta": 1,
+ "clips": 145,
+ "top1": 0.7586,
+ "top1_95ci": [
+  0.6829,
+  0.821
+ ],
+ "top5": 0.9379,
+ "macro_top1": 0.8053,
+ "classes": 82,
+ "weakest_classes": {
+  "BLUE": 0.0,
+  "CLOTHES": 0.0,
+  "DECIDE": 0.0,
+  "FORGET": 0.0,
+  "LATER": 0.0,
+  "WHAT": 0.0,
+  "THANKSGIVING": 0.0,
+  "SAME": 0.0,
+  "COOL": 0.2,
+  "LAST": 0.25
+ },
+ "per_signer_top1": {
+  "signers": 8,
+  "min": 0.0,
+  "median": 0.765
+ },
+ "model": "int8 onnx"
+}

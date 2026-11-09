@@ -704,6 +704,40 @@ was 84/100).
   (`random_degradation`) differ from the test ones, and the held-out-signer
   evaluation above was re-run through the same pipeline.
 
+### Tried and rejected: low-resolution training (E14)
+
+After Fix 2, low resolution (-10.3) is still the weakest condition. To find
+out why, we put back the clean version of one body part at a time into the
+low-resolution landmarks (shipped model, 252 clips): clean hands 66.3 ->
+72.6%, clean face -> 69.4%, clean body -> 67.5%. So it is mostly the hands:
+MediaPipe loses the hand in 10% of frames and the finger shape is off by 17%
+of the hand's size. Sharpening can't restore that detail, so we tried
+teaching the model instead.
+
+E14 = E4 trained with E13's degraded copies plus two low-resolution copies
+of every clip (scale 25-50%, half of them with light blur; the test uses a
+fixed 35%), extracted through the deployed pipeline
+(`make_degraded.py --kind low_res --prefix landmarks_lr --enhance`).
+
+| ensemble (video-level, deployed pipeline) | clean | dark | blur | tilt | low res | mean drop | **held-out signers** (3 seeds) |
+|---|---|---|---|---|---|---|---|
+| **E4+E13+E12 (shipped)** | 76.6% | 73.4% | 69.0% | 78.2% | 66.3% | 4.87 | **71.1%** (75.9 / 66.7 / 70.7) |
+| E14 alone | 71.0% | 67.9% | 62.7% | 68.2% | 62.7% | 5.7 | - |
+| E4+E14+E12 | 77.0% | 73.0% | 71.4% | 77.4% | 68.2% | 4.5 | 69.9% (75.9 / 64.5 / 69.3) |
+| E14+E13+E12 | 74.6% | 73.4% | 68.2% | 75.8% | 67.1% | 3.5 | - (clean already 2 points lower) |
+| E4+E13+E14+E12 | 75.8% | 73.4% | 69.0% | 77.0% | 67.9% | 4.0 | 69.1% (75.2 / 62.9 / 69.3) |
+
+- E14 does learn low resolution: alone its low-res drop is 8.3 points vs
+  ~12.5 for E4 and E13.
+- But every ensemble with E14 is **worse on new signers** (69.1-69.9%, below
+  the 70% target), the number that matters most, so we kept E4+E13+E12.
+  The differences are within the confidence intervals; we decided on the
+  held-out signers, never on the robustness clips alone.
+- Official test top-1 of E4+E14+E12: 83% (shipped: 84%).
+- Next idea for low resolution: per-group confidence from MediaPipe's hand
+  presence score, so the model can lean on location and motion when the
+  fingers are unreliable.
+
 Reproduce:
 
 ```bash
@@ -890,3 +924,11 @@ What was done, in order, and why (2026).
 - Re-ran the held-out signers through the new pipeline: 75.9 / 66.7 / 70.7,
   mean 71.1% (was 71.3%). `main.py` on official test: 83/100 (was 84).
 - results.csv: accuracy 71.07 PASS, size 4.65 PASS, robustness 4.87 PASS.
+
+**9 Nov - low resolution (E14), rejected**
+- Diagnosis: low-res drop is mostly the hands (clean hands put back: 66.3 ->
+  72.6%); MediaPipe loses 10% of hand frames, finger shape off by 17%.
+- E14: training with low-res copies of every clip. Robustness improves
+  (E4+E14+E12 mean drop 4.5, low res -8.7), but held-out signers fall to
+  69.9% (4-model ensemble 69.1%), below the 70% target. Kept E4+E13+E12
+  (71.1% held-out, drop 4.87).

@@ -1,0 +1,32 @@
+{
+ "run": "ens_e4_e14_e12",
+ "split": "valtest",
+ "tta": 1,
+ "clips": 252,
+ "top1": 0.7857,
+ "top1_95ci": [
+  0.731,
+  0.8319
+ ],
+ "top5": 0.9286,
+ "macro_top1": 0.8333,
+ "classes": 92,
+ "weakest_classes": {
+  "COLOR": 0.0,
+  "FINE": 0.0,
+  "HAT": 0.0,
+  "RIGHT": 0.0,
+  "SECRETARY": 0.25,
+  "PAINT": 0.25,
+  "GO": 0.38,
+  "THANKSGIVING": 0.4,
+  "FORGET": 0.5,
+  "LIKE": 0.5
+ },
+ "per_signer_top1": {
+  "signers": 40,
+  "min": 0.0,
+  "median": 1.0
+ },
+ "model": "int8 onnx"
+}

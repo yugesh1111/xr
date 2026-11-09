@@ -1,0 +1,32 @@
+{
+ "run": "h300_ens4",
+ "split": "holdout",
+ "tta": 1,
+ "clips": 150,
+ "top1": 0.6933,
+ "top1_95ci": [
+  0.6155,
+  0.7615
+ ],
+ "top5": 0.8867,
+ "macro_top1": 0.7588,
+ "classes": 72,
+ "weakest_classes": {
+  "CLOTHES": 0.0,
+  "CHEAT": 0.0,
+  "FINE": 0.0,
+  "RIGHT": 0.0,
+  "THANKSGIVING": 0.0,
+  "NOW": 0.0,
+  "WHAT": 0.0,
+  "GO": 0.25,
+  "ACCIDENT": 0.25,
+  "ALL": 0.33
+ },
+ "per_signer_top1": {
+  "signers": 18,
+  "min": 0.0,
+  "median": 0.733
+ },
+ "model": "int8 onnx"
+}

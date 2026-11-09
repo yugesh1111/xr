@@ -1,0 +1,32 @@
+{
+ "run": "h200_ens4",
+ "split": "holdout",
+ "tta": 1,
+ "clips": 186,
+ "top1": 0.629,
+ "top1_95ci": [
+  0.5577,
+  0.6952
+ ],
+ "top5": 0.8925,
+ "macro_top1": 0.6791,
+ "classes": 75,
+ "weakest_classes": {
+  "COOK": 0.0,
+  "FULL": 0.0,
+  "FINISH": 0.0,
+  "RIGHT": 0.0,
+  "LATER": 0.0,
+  "LETTER": 0.0,
+  "LIKE": 0.0,
+  "HOW": 0.0,
+  "PIZZA": 0.0,
+  "WANT": 0.0
+ },
+ "per_signer_top1": {
+  "signers": 22,
+  "min": 0.0,
+  "median": 0.695
+ },
+ "model": "int8 onnx"
+}
