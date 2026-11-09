@@ -60,6 +60,18 @@ def random_degradation(seed):
     return lambda rgb: blur(low_res(rgb, scale), 5)
 
 
+def random_low_res(seed):
+    """A random low-resolution degradation for training (E14): the signer far
+    away or a cheap sensor. Scale 25-50% (the test uses a fixed 35%), half of
+    the time with a light blur on top."""
+    rng = np.random.default_rng(seed)
+    scale = float(rng.uniform(0.25, 0.5))
+    k = int(rng.choice([0, 3, 5]))
+    if k == 0:
+        return lambda rgb: low_res(rgb, scale)
+    return lambda rgb: blur(low_res(rgb, scale), k)
+
+
 # ---------------------------------------------------------------- landmarks
 
 def _rot(x, yaw_deg):
