@@ -1,4 +1,4 @@
-"""Fill the "Data report" section of README.md: what data we have and how good it is.
+"""Fill the "Data report" section of docs/DETAILS.md: what data we have and how good it is.
 
 Run after download + landmark extraction:
     python scripts/data_report.py
@@ -12,7 +12,7 @@ import pandas as pd
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--root", default="data/wlasl")
-ap.add_argument("--readme", default="README.md")
+ap.add_argument("--readme", default="docs/DETAILS.md")
 args = ap.parse_args()
 root = Path(args.root)
 
