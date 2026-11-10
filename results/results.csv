@@ -1,7 +1,7 @@
 metric,target,measured,unit,device,runtime,pass
-top1_accuracy,>=70,71.07,%,offline evaluation (cloud CPU),"ONNX Runtime INT8, CPU",PASS
+top1_accuracy,>=70,78.06,%,offline evaluation (computer CPU),"ONNX Runtime INT8, CPU",PASS
 latency_p95,<=50,,ms,,"MediaPipe Holistic + ONNX Runtime INT8, per camera frame",
-model_size,<=25,4.65,MB,any,"ONNX INT8 (static, per-channel)",PASS
-accuracy_drop_robustness,<=5,4.87,pt,offline evaluation (cloud CPU),"video-level corruptions through the deployed pipeline (adaptive sharpening + MediaPipe), mean over conditions",PASS
+model_size,<=25,6.23,MB,any,"ONNX INT8 (static, per-channel)",PASS
+accuracy_drop_robustness,<=5,4.79,pt,offline evaluation (computer CPU),"video-level corruptions through the deployed pipeline (adaptive sharpening + MediaPipe), mean over conditions",PASS
 avg_power,<=500,,mW,,"whole phone, unplugged",
 thermal_drift_10min,<=20,,%,,10-minute live run,

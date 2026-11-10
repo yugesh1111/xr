@@ -1,0 +1,58 @@
+{
+ "runs/h300_ens3": {
+  "clips": 191,
+  "clean": {
+   "top1": 0.6859,
+   "shown": 0.5393,
+   "shown_correct": 0.9029
+  },
+  "near_arm": {
+   "top1": 0.6492,
+   "shown": 0.445,
+   "shown_correct": 0.9294
+  },
+  "near_close": {
+   "top1": 0.356,
+   "shown": 0.2094,
+   "shown_correct": 0.925
+  },
+  "far_half": {
+   "top1": 0.6859,
+   "shown": 0.5497,
+   "shown_correct": 0.9048
+  },
+  "far_third": {
+   "top1": 0.6859,
+   "shown": 0.534,
+   "shown_correct": 0.9118
+  }
+ },
+ "runs/h300_ens12": {
+  "clips": 191,
+  "clean": {
+   "top1": 0.7487,
+   "shown": 0.5497,
+   "shown_correct": 0.8952
+  },
+  "near_arm": {
+   "top1": 0.6597,
+   "shown": 0.4555,
+   "shown_correct": 0.931
+  },
+  "near_close": {
+   "top1": 0.3927,
+   "shown": 0.2461,
+   "shown_correct": 0.9149
+  },
+  "far_half": {
+   "top1": 0.7382,
+   "shown": 0.5707,
+   "shown_correct": 0.9174
+  },
+  "far_third": {
+   "top1": 0.7382,
+   "shown": 0.534,
+   "shown_correct": 0.9314
+  }
+ }
+}

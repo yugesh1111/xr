@@ -41,7 +41,8 @@ def main():
     out_dir = root / "landmarks"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    r = requests.get(URL, auth=credentials(), stream=True, timeout=120)
+    # Kaggle answers 404 to the default python-requests User-Agent
+    r = requests.get(URL, auth=credentials(), headers={"User-Agent": "curl/8.0"}, stream=True, timeout=120)
     r.raise_for_status()
     total = int(r.headers.get("content-length", 0))
     bar = tqdm(total=total, unit="B", unit_scale=True)

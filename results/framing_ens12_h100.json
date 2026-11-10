@@ -1,0 +1,58 @@
+{
+ "runs/h100_ens3": {
+  "clips": 203,
+  "clean": {
+   "top1": 0.7438,
+   "shown": 0.6256,
+   "shown_correct": 0.937
+  },
+  "near_arm": {
+   "top1": 0.7241,
+   "shown": 0.5271,
+   "shown_correct": 0.9252
+  },
+  "near_close": {
+   "top1": 0.3596,
+   "shown": 0.202,
+   "shown_correct": 0.9024
+  },
+  "far_half": {
+   "top1": 0.7488,
+   "shown": 0.6601,
+   "shown_correct": 0.9179
+  },
+  "far_third": {
+   "top1": 0.7734,
+   "shown": 0.6108,
+   "shown_correct": 0.9435
+  }
+ },
+ "runs/h100_ens12": {
+  "clips": 203,
+  "clean": {
+   "top1": 0.8079,
+   "shown": 0.6059,
+   "shown_correct": 0.9593
+  },
+  "near_arm": {
+   "top1": 0.7783,
+   "shown": 0.5123,
+   "shown_correct": 0.9615
+  },
+  "near_close": {
+   "top1": 0.399,
+   "shown": 0.2167,
+   "shown_correct": 0.9318
+  },
+  "far_half": {
+   "top1": 0.7833,
+   "shown": 0.6355,
+   "shown_correct": 0.9535
+  },
+  "far_third": {
+   "top1": 0.7882,
+   "shown": 0.601,
+   "shown_correct": 0.9508
+  }
+ }
+}

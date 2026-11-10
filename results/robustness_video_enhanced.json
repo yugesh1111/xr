@@ -1,33 +1,19 @@
 {
- "clips": 252,
+ "clips": 422,
  "results": {
-  "e4": {
-   "clean": 0.7302,
-   "dark": 0.6667,
-   "blur": 0.627,
-   "rotate15": 0.7143,
-   "low_res": 0.6032
+  "f_base+f_nf+f_deg": {
+   "clean": 0.7796,
+   "dark": 0.7204,
+   "blur": 0.6919,
+   "rotate15": 0.7773,
+   "low_res": 0.6777
   },
-  "e13": {
-   "clean": 0.7183,
-   "dark": 0.7103,
-   "blur": 0.6151,
-   "rotate15": 0.7063,
-   "low_res": 0.5952
-  },
-  "e4+e12": {
-   "clean": 0.754,
-   "dark": 0.7222,
-   "blur": 0.6706,
-   "rotate15": 0.7738,
-   "low_res": 0.6468
-  },
-  "e4+e13+e12": {
-   "clean": 0.7659,
-   "dark": 0.7341,
-   "blur": 0.6905,
-   "rotate15": 0.7817,
-   "low_res": 0.6627
+  "f_base+f_nf+f_deg+f_e12p25": {
+   "clean": 0.8009,
+   "dark": 0.7512,
+   "blur": 0.7227,
+   "rotate15": 0.8104,
+   "low_res": 0.7275
   }
  }
 }

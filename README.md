@@ -5,24 +5,29 @@ recognition for the Samsung PRISM XR Hackathon 2026, Track 02
 ("EchoGesture: Sign Language Prediction on Edge Device").
 
 One short video clip in, one ASL word (gloss) out, running fully on the
-device with an INT8 model of about 1.5 MB.
+device with an INT8 model of 6.2 MB.
 
-**Status:** WLASL100, deployed INT8 model (4.4 MB): **71.1% top-1 on signers
-never seen in training or in any model choice** (mean of 3 held-out signer
-groups, 66.7-75.9%; see [Held-out signers](#held-out-signers-headline)).
-Robustness: mean accuracy drop **4.9 points** under dark, blur, tilt and
-low-resolution video (target <= 5), thanks to adaptive sharpening before
-MediaPipe ([Fix 2](#fix-2-adaptive-sharpening-before-mediapipe)).
-For reference: 84% top-1 / 96% top-5 on the official test clips (mostly
-signers seen in training) and 78.2% on a pooled 252-clip set (raw-landmark
-baseline: 52-60%). Android app runs on the Android emulator (built-in test
-clips 6/6 correct, same answers as Python); not yet run on a real phone.
-See [Results](#results) and [Work log](#work-log).
+**Status (10 Nov):** WLASL100 (the organisers' 100 words), 1,466 clips.
+Deployed INT8 model = ensemble of 4 networks (base, near/far, degraded video,
+Kaggle-pretrained; see [Current model](#current-model-10-nov)):
 
-**Read with care:** 87% of the official test clips come from signers who are
-also in training, and the pooled set includes the validation signers used to
-pick checkpoints and the ensemble, so both are optimistic for new people.
-That is why the held-out-signer number leads.
+- **78.1% top-1 on signers never seen in training** (mean of 3 held-out
+  signer groups, 622 clips, 74.9-80.8%).
+- **Robustness: mean drop 4.8 points** under dark, blur, tilt and
+  low-resolution video through the deployed pipeline (target <= 5; was 6.3
+  before the Kaggle-pretrained member). Landmark-level drop 1.1.
+- **Phone near or far:** 71.9% at arm's length with the shoulders off-screen,
+  76.9% / 77.2% with the signer at 1/2 and 1/3 size (held-out signers).
+- Live captions are shown only when the model is sure (top probability
+  >= 0.45 and 0.20 ahead of the next word); shown captions are right
+  90-96% of the time.
+- Official test clips: 81.6% top-1 (201 clips; 78.8% on the 80 clips whose
+  signers are not in training).
+- Android app: runs on the emulator; not yet measured on a real phone.
+
+**Read with care:** the training recipe (near/far augmentation, degraded
+video member) was chosen after seeing held-out results in earlier rounds,
+so the held-out number is slightly optimistic. Details in [Results](#results).
 
 ## Contents
 
@@ -245,21 +250,22 @@ Filled in by `python scripts/data_report.py` from the files in `data/`.
 Coverage:
 
 - Clips listed in WLASL for these 100 glosses: **2038**
-- Clips we could obtain (Kaggle mirror + direct links): **1013**
-- Clips with landmarks extracted: **1013**
+- Clips we could obtain (Kaggle mirror + direct links): **1466**
+- Clips with landmarks extracted: **1466**
 
 | split | clips | signers | glosses |
 |---|---|---|---|
-| train | 761 | 54 | 100 |
-| val | 152 | 9 | 75 |
-| test | 100 | 34 | 72 |
+| train | 1044 | 59 | 100 |
+| val | 221 | 13 | 95 |
+| test | 201 | 41 | 98 |
 
-Clips per gloss in train: min 3, median 7, max 13
+Clips per gloss in train: min 5, median 10, max 19
 
 Clips by source site:
 
 | host | clips |
 |---|---|
+| www.youtube.com | 453 |
 | www.signingsavvy.com | 225 |
 | signstock.blob.core.windows.net | 196 |
 | media.asldeafined.com | 131 |
@@ -272,10 +278,10 @@ Clips by source site:
 
 Landmark quality (MediaPipe Holistic):
 
-- Frames per clip: median 65, min 19, max 195
-- Pose found: 100% of frames on average
-- At least one hand found: 66% of frames on average (low values are mostly rest pose at the start/end of a clip)
-- Clips where no hand was ever found: 0
+- Frames per clip: median 70, min 19, max 212
+- Pose found: 99% of frames on average
+- At least one hand found: 65% of frames on average (low values are mostly rest pose at the start/end of a clip)
+- Clips where no hand was ever found: 5
 
 <!-- data-report:end -->
 
@@ -494,7 +500,63 @@ WLASL100, trained on CPU, seed 0. **Pooled** = 252 clips: validation (9
 signers never seen in training) + WLASL's official test clips we could
 obtain. 95% confidence intervals are Wilson intervals.
 
-### Held-out signers (headline)
+### Current model (10 Nov)
+
+Four networks, probabilities averaged, exported together as one INT8 ONNX
+file (`models/model_int8.onnx`, 6.2 MB; classifier P95 7.9 ms on 1 laptop
+CPU thread):
+
+| member | trained on | what it adds |
+|---|---|---|
+| base | WLASL train | baseline |
+| near/far | + close-up (shoulders cut off) and far-away landmark augmentation | phone close or far |
+| degraded | + landmarks from darkened / blurred / low-res video | bad video |
+| E12 | encoder pre-trained 25 epochs on Kaggle ASL Signs (94,477 phone clips, 250 signs, 65.2% on unseen signers), then the "degraded" recipe + 20 Kaggle clips per shared word | robustness, more signers |
+
+**Held-out signers** (3 groups removed completely from train/val/test, all
+4 members retrained per group, INT8, evaluated once; landmarks without the
+sharpening step, which changed one clip in earlier runs):
+
+| seed | signers | clips | 3 members | **4 members (+E12)** | 95% CI | top-5 |
+|---|---|---|---|---|---|---|
+| 100 | 16 | 203 | 74.4% | **80.8%** | 74.8-85.6% | 93.1% |
+| 200 | 3 | 228 | 78.1% | **78.5%** | 72.7-83.3% | 95.2% |
+| 300 | 13 | 191 | 68.6% | **74.9%** | 68.3-80.5% | 91.1% |
+| **mean** | | **622** | 73.7% | **78.1%** | | 93.1% |
+
+**Phone near / far** (held-out signers, mean of 3 groups; `scripts/eval_framing.py`,
+`results/framing_ens12_h*.json`):
+
+| | clean | arm's length (face 30% of frame) | very close (face 50%) | far 1/2 | far 1/3 |
+|---|---|---|---|---|---|
+| 3 members | 73.7% | 68.0% | 37.0% | 72.8% | 74.2% |
+| **4 members** | **78.1%** | **71.9%** | **40.7%** | **76.9%** | **77.2%** |
+
+Very close is still weak: hands are in frame in only ~15% of frames, so the
+app asks the user to move back.
+
+**Robustness** (422 val + test clips, corrupted video re-run through the
+deployed pipeline with adaptive sharpening; `results/robustness_video_enhanced.json`):
+
+| | clean | dark | blur | tilt 15 deg | low res | **mean drop** |
+|---|---|---|---|---|---|---|
+| 3 members | 78.0% | -5.9 | -8.8 | -0.2 | -10.2 | 6.3 |
+| **4 members** | **80.1%** | **-5.0** | **-7.8** | **+0.7** | **-7.3** | **4.8** |
+
+Other mixes tried (two E12 copies, dropping a member, E12 from the 6-epoch
+encoder) scored 4.6-6.0; gaps under ~0.5 points are noise (1 clip = 0.24
+points), so the most accurate passing mix was kept.
+
+**Official WLASL100 test clips** (201 obtained, INT8): 81.6% top-1, 92.0%
+top-5; signers also in training 83.5% (121 clips), unseen 78.8% (80 clips).
+`results/predictions.jsonl` is `main.py` on these clips (70 of them cut out
+of longer videos at the WLASL frame range).
+
+### Earlier rounds (7-9 Nov, 1,013 clips, E4 + E13 + E12)
+
+The sections below are kept as the record of how we got here.
+
+#### Held-out signers (8-9 Nov)
 
 Procedure ([docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md)): for each
 seed, pick a group of signers, remove **all** their clips from train, val and
@@ -896,7 +958,7 @@ What was done, in order, and why (2026).
 
 **Next** (step by step in [docs/CLOUD_PROCEDURE.md](docs/CLOUD_PROCEDURE.md))
 - Held-out-signer accuracy that no choice was made on (the headline number).
-- `predictions.jsonl` and `results.csv` from the final model; Docker build check.
+- Done 10 Nov: `predictions.jsonl` (164/201) and `results.csv` from the 4-member model; Docker checked offline.
 - Run the app on the Galaxy A36 or Remote Test Lab (Test + 10-minute Bench).
 - Organiser confirmation for Kaggle ASL Signs; E4+E13 fallback ready.
 - Demo video and presentation.
@@ -924,6 +986,19 @@ What was done, in order, and why (2026).
 - Re-ran the held-out signers through the new pipeline: 75.9 / 66.7 / 70.7,
   mean 71.1% (was 71.3%). `main.py` on official test: 83/100 (was 84).
 - results.csv: accuracy 71.07 PASS, size 4.65 PASS, robustness 4.87 PASS.
+
+**10 Nov - live recognition, near/far, Kaggle pre-training** (this laptop)
+- App fixes: launch crash, junk captions removed (confidence + margin gate,
+  movement-based sign segmentation), 1280x720 camera, ring light / torch
+  when the scene is dark, "move back" hint when too close.
+- Signers without shoulders in frame: virtual shoulders placed from the
+  face (`ensure_shoulders`, Python + Kotlin, golden-tested).
+- Data 1,013 -> 1,466 clips (Kaggle WLASL mirror refill).
+- Near/far and degraded-video members; Kaggle ASL Signs pre-training
+  (94,477 sequences; labels table from a public copy because the
+  competition download needs rule acceptance) -> E12 member.
+- Result: held-out 73.7 -> 78.1%, robustness drop 6.3 -> 4.8, official test
+  80.6 -> 81.6%, model 6.2 MB.
 
 **9 Nov - low resolution (E14), rejected**
 - Diagnosis: low-res drop is mostly the hands (clean hands put back: 66.3 ->

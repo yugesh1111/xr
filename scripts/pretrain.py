@@ -44,6 +44,7 @@ def main():
     ap.add_argument("--dim", type=int, default=192)
     ap.add_argument("--length", type=int, default=32)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     args = ap.parse_args()
     root, out = Path(args.root), Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -67,6 +68,8 @@ def main():
     Xtr = X[tr].float()
     model.set_normalization(Xtr.mean((0, 1)).numpy(), Xtr.std((0, 1)).numpy())
     del Xtr
+    dev = torch.device(args.device)
+    model.to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05)
     steps = args.epochs * math.ceil(len(tr) / args.batch_size)
     warm = max(steps // 20, 1)
@@ -83,9 +86,9 @@ def main():
         perm = tr[torch.randperm(len(tr)).numpy()]
         for i in range(0, len(perm), args.batch_size):
             b = perm[i:i + args.batch_size]
-            xb = X[b].float()
+            xb = X[b].float().to(dev)
             xb = xb + 0.02 * torch.randn_like(xb) * (xb != 0)  # light noise on observed values
-            loss = torch.nn.functional.cross_entropy(model(xb), y[b], label_smoothing=0.1)
+            loss = torch.nn.functional.cross_entropy(model(xb), y[b].to(dev), label_smoothing=0.1)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -94,7 +97,7 @@ def main():
             total += loss.item() * len(b)
         model.eval()
         with torch.no_grad():
-            pred = torch.cat([model(X[va[i:i + 1024]].float()).argmax(1) for i in range(0, len(va), 1024)])
+            pred = torch.cat([model(X[va[i:i + 1024]].float().to(dev)).argmax(1).cpu() for i in range(0, len(va), 1024)])
         acc = (pred == y[va]).float().mean().item()
         rec = {"epoch": epoch + 1, "train_loss": total / len(tr), "val_top1": acc, "sec": round(time.time() - t0, 1)}
         log.write(json.dumps(rec) + "\n")
@@ -102,7 +105,7 @@ def main():
         print(f"ep {epoch + 1:2d}  loss {rec['train_loss']:.3f}  val top1 {acc:.3f}  ({rec['sec']}s)")
         if acc > best:
             best = acc
-            torch.save({"model": model.state_dict(), "config": config, "vocab": vocab}, out / "best.pt")
+            torch.save({"model": {k: v.cpu() for k, v in model.state_dict().items()}, "config": config, "vocab": vocab}, out / "best.pt")
     print(f"best val top1 {best:.3f} -> {out / 'best.pt'}")
 
 

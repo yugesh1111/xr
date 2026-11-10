@@ -83,7 +83,7 @@ def main():
         add("top1_accuracy", 100 * top1, "%", ">= 70", 100 * top1 >= 70, ", ".join(Path(p).name for p in args.eval),
             f"mean over {len(evals)} held-out signer groups: " + "; ".join(parts))
         add("top5_accuracy", 100 * float(np.mean([e["top5"] for e in evals])), "%", "", None, "")
-        brief["top1_accuracy"] = (100 * top1, "offline evaluation (cloud CPU)", "ONNX Runtime INT8, CPU")
+        brief["top1_accuracy"] = (100 * top1, "offline evaluation (computer CPU)", "ONNX Runtime INT8, CPU")
     else:
         add("top1_accuracy", None, "%", ">= 70", None, "", "pass --eval")
     if args.eval_test:
@@ -104,7 +104,7 @@ def main():
         add(f"robustness_drop_{level}", mean, "points", "<= 5", mean <= 5, Path(path).name,
             f"mean over conditions; worst {wname} {worst:.1f}")
         if level == args.robustness_level:
-            brief["accuracy_drop_robustness"] = (mean, "offline evaluation (cloud CPU)",
+            brief["accuracy_drop_robustness"] = (mean, "offline evaluation (computer CPU)",
                                                  "video-level corruptions through the deployed pipeline "
                                                  "(adaptive sharpening + MediaPipe), mean over conditions"
                                                  if level == "video_enhanced" else
