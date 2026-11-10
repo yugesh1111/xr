@@ -26,7 +26,7 @@ def load_split(manifest, landmark_dir, split, vocab=None):
 
 class ClipDataset(Dataset):
     def __init__(self, paths, labels, mode="canonical", length=32, train=False, seed=0, aug="default",
-                 alt_dirs=(), p_alt=0.5):
+                 alt_dirs=(), p_alt=0.5, p_close=0.0, p_far=0.0):
         self.paths, self.labels = list(paths), np.asarray(labels)
         # landmarks of the same clip extracted from degraded video (training only)
         self.alts = [[Path(d) / Path(p).name for d in alt_dirs if (Path(d) / Path(p).name).exists()]
@@ -34,6 +34,8 @@ class ClipDataset(Dataset):
         self.p_alt = p_alt
         self.mode, self.length, self.train = mode, length, train
         self.seed, self.aug = seed, aug
+        self.p_close = p_close  # share of training samples turned into phone close-ups
+        self.p_far = p_far      # ... and into a signer far from the phone
         self._cache = {}
 
     def __len__(self):
@@ -54,7 +56,7 @@ class ClipDataset(Dataset):
         if len(x) == 0:
             x = self.xyz(i)
         if self.train:
-            x = augment(x, rng, self.aug)
+            x = augment(x, rng, self.aug, p_close=self.p_close, p_far=self.p_far)
             x = make_input(x, self.mode, self.length, uniform_weight=rng.uniform(0.3, 0.8))
         else:
             x = make_input(x, self.mode, self.length)

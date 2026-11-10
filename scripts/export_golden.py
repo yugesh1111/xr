@@ -22,6 +22,8 @@ from echogesture.inputs import make_input  # noqa: E402
 out = Path("android/app/src/test/resources/golden")
 out.mkdir(parents=True, exist_ok=True)
 for f in out.glob("*.bin"):
+    if f.name.startswith("kaggle_") and not Path("data/kaggle_asl/landmarks_fixed").exists():
+        continue  # keep the Kaggle case when that data is not on this machine
     f.unlink()
 
 
@@ -56,6 +58,11 @@ write("mirrored", m)
 x = clips[2].copy()
 x[:, L.POSE] = np.nan
 write("no_pose", x)
+# phone held close: shoulders off the bottom edge, placed from the face instead
+from echogesture.augment import close_up, far_away  # noqa: E402
+write("closeup", close_up(clips[3], np.random.default_rng(0), aspect=9 / 16, face_frac=0.5))
+write("closeup_arm", close_up(clips[4], np.random.default_rng(1), aspect=9 / 16, face_frac=0.3))
+write("far", far_away(clips[5], np.random.default_rng(2), scale=0.4))
 # a Kaggle ASL Signs clip
 k = sorted(Path("data/kaggle_asl/landmarks_fixed").glob("*.npz"))[:1]
 if k:

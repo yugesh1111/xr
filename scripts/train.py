@@ -47,6 +47,10 @@ ap.add_argument("--extra-manifest", default=None, help="extra training clips (e.
 ap.add_argument("--extra-landmarks", default=None)
 ap.add_argument("--extra-per-class", type=int, default=20, help="max extra clips per gloss, keeps classes balanced")
 ap.add_argument("--length", type=int, default=32)
+ap.add_argument("--p-close", type=float, default=0.0,
+                help="share of training samples turned into phone close-ups (shoulders off-screen)")
+ap.add_argument("--p-far", type=float, default=0.0,
+                help="share of training samples turned into a small, distant signer (noisier landmarks)")
 ap.add_argument("--dim", type=int, default=192)
 ap.add_argument("--epochs", type=int, default=120)
 ap.add_argument("--batch-size", type=int, default=64)
@@ -77,7 +81,7 @@ if args.extra_manifest:
     print(f"+ {len(ex)} extra training clips for {ex.gloss.nunique()} glosses")
 print(f"train {len(tr_paths)} clips, val {len(va_paths)} clips, {len(vocab)} classes, device {args.device}")
 train_ds = ClipDataset(tr_paths, tr_y, args.mode, args.length, train=True, aug=args.aug,
-                       alt_dirs=args.alt_landmarks)
+                       alt_dirs=args.alt_landmarks, p_close=args.p_close, p_far=args.p_far)
 if args.alt_landmarks:
     print(f"degraded-video landmarks for {sum(1 for a in train_ds.alts if a)} of {len(train_ds)} training clips")
 val_ds = ClipDataset(va_paths, va_y, args.mode, args.length)

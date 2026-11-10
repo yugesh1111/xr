@@ -21,7 +21,24 @@ from tqdm import tqdm
 URL = "https://www.kaggle.com/api/v1/datasets/download/risangbaskoro/wlasl-processed"
 
 
+class BearerAuth(requests.auth.AuthBase):
+    def __init__(self, token):
+        self.token = token
+
+    def __call__(self, r):
+        r.headers["Authorization"] = f"Bearer {self.token}"
+        return r
+
+
 def credentials():
+    """Basic auth (username + legacy key) or a bearer token (new KGAT_ API tokens,
+    from KAGGLE_API_TOKEN or ~/.kaggle/access_token)."""
+    token = os.environ.get("KAGGLE_API_TOKEN")
+    tok_file = Path.home() / ".kaggle" / "access_token"
+    if not token and tok_file.exists():
+        token = tok_file.read_text().strip()
+    if token:
+        return BearerAuth(token)
     user, key = os.environ.get("KAGGLE_USERNAME"), os.environ.get("KAGGLE_KEY")
     cfg = Path.home() / ".kaggle" / "kaggle.json"
     if not (user and key) and cfg.exists():
@@ -39,7 +56,8 @@ def main():
     auth = credentials()
     if auth is None:
         print("no Kaggle credentials found; trying without (works only if a proxy adds them)")
-    with requests.get(URL, auth=auth, stream=True, timeout=60) as r:
+    # Kaggle answers 404 to the default python-requests User-Agent
+    with requests.get(URL, auth=auth, headers={"User-Agent": "curl/8.0"}, stream=True, timeout=60) as r:
         r.raise_for_status()
         total = int(r.headers.get("content-length", 0))
         with open(out, "wb") as f, tqdm(total=total, unit="B", unit_scale=True) as bar:

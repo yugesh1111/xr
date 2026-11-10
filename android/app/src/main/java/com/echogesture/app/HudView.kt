@@ -17,6 +17,11 @@ import com.echogesture.core.Layout
  */
 class HudView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     var word = ""; var confidence = 0f; var alternatives: List<String> = emptyList()
+    var shownAtMs = 0L  // the caption fades out 4 s after it was set
+    var tooClose = false  // face fills too much of the frame: hands are mostly out of view
+    var tooDark = false   // picture too dark for reliable hand tracking
+    var ringLight = false // front camera in low light: white border lights the signer
+    private val ring = Paint().apply { color = Color.WHITE; style = Paint.Style.STROKE }
     var transcript: List<String> = emptyList()
     var status = ""
     var signing = false
@@ -38,10 +43,14 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
 
     override fun onDraw(c: Canvas) {
         super.onDraw(c)
+        if (ringLight) {  // drawn first so captions and buttons stay on top
+            ring.strokeWidth = 56 * dp
+            c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), ring)
+        }
         drawSkeleton(c)
         val w = width.toFloat()
         // caption
-        if (word.isNotEmpty()) {
+        if (word.isNotEmpty() && android.os.SystemClock.uptimeMillis() - shownAtMs < 4000) {
             val color = when {
                 confidence >= 0.6f -> Color.rgb(80, 230, 120)
                 confidence >= 0.35f -> Color.rgb(255, 196, 0)
@@ -52,8 +61,21 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
             val top = 40 * dp
             c.drawRoundRect(RectF(16 * dp, top, w - 16 * dp, top + 96 * dp), 18 * dp, 18 * dp, pill)
             c.drawText(text, w / 2, top + 50 * dp, big)
-            val alt = if (alternatives.isNotEmpty()) "or: " + alternatives.joinToString("  ·  ") else ""
+            // alternatives only while the model is unsure between a few words
+            val alt = if (confidence < 0.6f && alternatives.isNotEmpty()) "or: " + alternatives.joinToString("  ·  ") else ""
             c.drawText("${(confidence * 100).toInt()}%   $alt", w / 2, top + 80 * dp, small)
+        }
+        val hint = when {
+            tooDark -> "Too dark: turn on a light or face a window"
+            tooClose -> "Move the phone back a little so your hands are in view"
+            else -> null
+        }
+        if (hint != null) {
+            val top = height - 205 * dp
+            c.drawRoundRect(RectF(16 * dp, top, w - 16 * dp, top + 44 * dp), 12 * dp, 12 * dp, pill)
+            small.color = Color.rgb(255, 196, 0)
+            c.drawText(hint, w / 2, top + 28 * dp, small)
+            small.color = Color.WHITE
         }
         if (transcript.isNotEmpty()) {
             c.drawText(transcript.joinToString(" "), w / 2, 160 * dp, small)

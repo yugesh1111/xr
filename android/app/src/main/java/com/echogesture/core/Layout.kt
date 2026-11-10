@@ -18,6 +18,10 @@ object Layout {
     const val R_WRIST = 16
 
     const val F_NOSE = 0
+    const val F_FOREHEAD = 1
+    const val F_CHIN = 2
+    const val F_EYE_R = 3
+    const val F_EYE_L = 4
     const val F_UPPER_LIP = 9
     const val F_LOWER_LIP = 10
     const val F_MOUTH_L = 5

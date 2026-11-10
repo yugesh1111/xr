@@ -15,6 +15,10 @@ class Segmenter(
     private val stillSpeed: Double = 0.004,
     private val maxFrames: Int = 90,
     private val preRoll: Int = 5,
+    // a segment must move the hand at least this far, in face heights, to count as a
+    // sign: holding the hands still in view, or small fidgets, never reach the model
+    private val minTravelFaces: Double = 0.8,
+    private val minFrames: Int = 10,
 ) {
     enum class State { IDLE, SIGNING }
 
@@ -27,6 +31,8 @@ class Segmenter(
     private var stillRun = 0
     private var moved = false
     private var lastWrist: FloatArray? = null
+    private var travel = 0.0
+    private val faceHeights = ArrayList<Double>()
 
     /** Feed one frame (88*3 floats, NaN = missing). Returns a finished segment or null. */
     fun push(frame: FloatArray): List<FloatArray>? {
@@ -41,10 +47,13 @@ class Segmenter(
                     state = State.SIGNING
                     segment.clear(); segment.addAll(history)
                     missingRun = 0; stillRun = 0; moved = false
+                    travel = 0.0; faceHeights.clear()
                 }
             }
             State.SIGNING -> {
                 segment.add(frame)
+                travel += speed
+                faceHeight(frame)?.let { faceHeights.add(it) }
                 missingRun = if (hand) 0 else missingRun + 1
                 if (speed > stillSpeed * 3) moved = true
                 stillRun = if (hand && speed < stillSpeed) stillRun + 1 else 0
@@ -54,7 +63,7 @@ class Segmenter(
                     history.clear(); seenRun = 0
                     val out = ArrayList(segment)
                     segment.clear()
-                    return if (moved || out.size >= 12) out else null
+                    return if (isSign(out.size)) out else null
                 }
             }
         }
@@ -65,6 +74,20 @@ class Segmenter(
     fun current(): List<FloatArray> = ArrayList(segment)
 
     fun reset() { state = State.IDLE; history.clear(); segment.clear(); seenRun = 0 }
+
+    /** Enough frames and enough hand travel relative to the face (scale-free). */
+    fun isSign(frames: Int): Boolean {
+        if (frames < minFrames || !moved) return false
+        val fh = if (faceHeights.isEmpty()) 0.25 else faceHeights.sorted()[faceHeights.size / 2]
+        return travel / fh >= minTravelFaces
+    }
+
+    /** Forehead-chin distance in image units, or null when the face is not found. */
+    private fun faceHeight(f: FloatArray): Double? {
+        val a = (Layout.FACE + Layout.F_FOREHEAD) * 3; val b = (Layout.FACE + Layout.F_CHIN) * 3
+        if (f[a].isNaN() || f[b].isNaN()) return null
+        return Math.hypot((f[a] - f[b]).toDouble(), (f[a + 1] - f[b + 1]).toDouble()).takeIf { it > 1e-3 }
+    }
 
     private fun handSeen(f: FloatArray, block: Int) = !f[block * 3].isNaN()
 

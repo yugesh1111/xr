@@ -32,8 +32,9 @@ def similarity(x, angle, scale, shift):
     return (x @ R.T) * scale + np.array([*shift, 0], dtype=np.float32)
 
 
-@pytest.mark.parametrize("angle,scale,shift", [(0.3, 1.7, (0.2, -0.1)), (-0.5, 0.6, (-0.3, 0.4))])
+@pytest.mark.parametrize("angle,scale,shift", [(0.3, 1.3, (0.0, -0.3)), (-0.5, 0.6, (-0.3, 0.4))])
 def test_invariant_to_camera_roll_distance_and_position(angle, scale, shift):
+    # shoulders stay inside the image here; off-screen shoulders are the close-up path below
     a = clip_features(fake_clip())
     b = clip_features(similarity(fake_clip(), angle, scale, shift))
     for g in a:

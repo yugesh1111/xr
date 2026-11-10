@@ -7,6 +7,8 @@ import urllib.request
 from pathlib import Path
 
 import cv2
+
+cv2.setNumThreads(1)  # one thread per worker; extract_landmarks.py runs many workers in parallel
 import numpy as np
 
 from . import layout
@@ -78,13 +80,17 @@ def read_video(path, frame_start=1, frame_end=-1, transform=None):
     fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     i = 0
     try:
+        # skip to the sign without decoding the frames before it (long YouTube
+        # videos hold many signs; frame_start can be in the thousands)
+        while i + 1 < frame_start:
+            if not cap.grab():
+                return
+            i += 1
         while True:
             ok, bgr = cap.read()
             if not ok:
                 break
             i += 1
-            if i < frame_start:
-                continue
             if frame_end > 0 and i > frame_end:
                 break
             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)

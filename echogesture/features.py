@@ -1,6 +1,9 @@
 """Landmarks -> signer-invariant, factorized features.
 
 Pipeline for one clip (T, 88, 3):
+  0. ensure_shoulders – close-up framing (shoulders below the image edge):
+                        replace MediaPipe's guessed shoulders with ones
+                        placed from the face, so the body frame stays valid
   1. fix_hand_slots   – put each hand next to the pose wrist it belongs to
   2. canonicalize     – body frame: origin at the chest, unit = shoulder width,
                         shoulders level and facing the camera
@@ -18,6 +21,15 @@ import numpy as np
 from . import layout as L
 
 GROUPS = ("handshape", "orientation", "location", "motion", "nonmanual", "quality")
+
+
+# Body proportions in units of face height (forehead-chin), measured on the
+# WLASL100 training clips with both shoulders in view
+# (scripts/face_body_ratios.py). Used to place shoulders for close-up clips.
+SHOULDER_DROP = 1.21      # eye midpoint -> shoulder midpoint, along "down" (IQR 1.14-1.30)
+SHOULDER_HALF = 0.855     # half the shoulder width (IQR 0.82-0.90)
+IN_FRAME_Y = 0.98         # a point lower than this (fraction of image height) is off-screen
+MIN_IN_FRAME = 0.5        # share of frames that must show both shoulders
 
 
 # ---------------------------------------------------------------- geometry
@@ -57,6 +69,54 @@ def fix_hand_slots(xyz):
         xyz[flip, L.LHAND], xyz[flip, L.RHAND] = r, l
     return xyz
 
+
+
+def shoulders_in_frame(xyz):
+    """(T,) bool: both pose shoulders detected and inside the image."""
+    sh = xyz[:, [L.L_SHOULDER, L.R_SHOULDER]]
+    ok = ~np.isnan(sh).any(axis=(1, 2))
+    with np.errstate(invalid="ignore"):
+        # vertical only: close-ups push the shoulders off the bottom edge
+        ok &= (sh[..., 1] <= IN_FRAME_Y).all(1) & (sh[..., 1] >= 0).all(1)
+    return ok
+
+
+def ensure_shoulders(xyz):
+    """Close-up clips: put the shoulders where the face says they are.
+
+    MediaPipe still returns shoulders when they are below the image edge, but
+    those are guesses and they set the scale of every other feature. When
+    fewer than half the frames show both shoulders, they are replaced by
+    fixed points placed from the face (eye line for roll, face height for
+    scale), and the elbows, which are then off-screen too, are dropped.
+    Returns (xyz, real) where real says whether the shoulders were seen.
+    Clips with shoulders in view are returned unchanged."""
+    if shoulders_in_frame(xyz).mean() >= MIN_IN_FRAME:
+        return xyz, True
+    f = xyz[:, L.FACE]
+    eye_r, eye_l = f[:, 3, :2], f[:, 4, :2]
+    top, chin = f[:, L.F_FOREHEAD, :2], f[:, L.F_CHIN, :2]
+    ok = ~(np.isnan(eye_r).any(1) | np.isnan(eye_l).any(1) | np.isnan(top).any(1) | np.isnan(chin).any(1))
+    if not ok.any():
+        return xyz, False  # no face either: canonicalize falls back to centring
+    eye_r, eye_l = np.median(eye_r[ok], 0), np.median(eye_l[ok], 0)
+    fh = float(np.median(np.linalg.norm(top[ok] - chin[ok], axis=-1))) + 1e-6
+    across = eye_l - eye_r
+    u = across / (np.linalg.norm(across) + 1e-8)       # towards the signer's left (image right)
+    down = np.array([-u[1], u[0]])                      # u turned 90 deg, image y points down
+    if down[1] < 0:
+        down = -down
+    mid = (eye_l + eye_r) / 2 + down * SHOULDER_DROP * fh
+    zs = xyz[:, [L.L_SHOULDER, L.R_SHOULDER], 2]
+    z = float(np.nanmedian(zs)) if not np.isnan(zs).all() else float(np.nanmedian(f[:, L.F_NOSE, 2]))
+    out = xyz.copy()
+    out[:, L.L_SHOULDER] = [*(mid + u * SHOULDER_HALF * fh), z]
+    out[:, L.R_SHOULDER] = [*(mid - u * SHOULDER_HALF * fh), z]
+    with np.errstate(invalid="ignore"):
+        for e in (L.L_ELBOW, L.R_ELBOW):
+            off = ~(out[:, e, 1] <= IN_FRAME_Y)
+            out[off, e] = np.nan
+    return out.astype(np.float32), False
 
 
 def canonicalize(xyz, use_yaw=True, max_yaw_deg=60.0):
@@ -172,6 +232,7 @@ def _vel(p):
 def clip_features(xyz, max_gap=6):
     """(T, 88, 3) raw landmarks -> dict of (T, D) float32 arrays with no NaNs."""
     xyz = np.asarray(xyz, dtype=np.float32)
+    xyz, real_shoulders = ensure_shoulders(xyz)
     xyz = fix_hand_slots(xyz)
     xyz = canonicalize(xyz)
     xyz, mirrored = to_right_dominant(xyz)
@@ -210,7 +271,7 @@ def clip_features(xyz, max_gap=6):
         np.linalg.norm(xyz[:, L.FACE.start + L.F_UPPER_LIP] - xyz[:, L.FACE.start + L.F_LOWER_LIP], axis=-1)[:, None],
         np.linalg.norm(xyz[:, L.FACE.start + L.F_MOUTH_L] - xyz[:, L.FACE.start + L.F_MOUTH_R], axis=-1)[:, None],
     ], axis=1))
-    pose_ok = ~np.isnan(xyz[:, [L.L_SHOULDER, L.R_SHOULDER]]).any(axis=(1, 2))
+    pose_ok = ~np.isnan(xyz[:, [L.L_SHOULDER, L.R_SHOULDER]]).any(axis=(1, 2)) & real_shoulders
     groups["quality"].append(np.stack([pose_ok, np.full(T, mirrored)], axis=1))
 
     out = {}

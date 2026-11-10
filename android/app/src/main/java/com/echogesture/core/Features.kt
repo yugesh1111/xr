@@ -41,6 +41,74 @@ object Features {
 
     // ------------------------------------------------------------ preprocessing
 
+    // same constants as echogesture/features.py (measured by scripts/face_body_ratios.py)
+    const val SHOULDER_DROP = 1.21
+    const val SHOULDER_HALF = 0.855
+    const val IN_FRAME_Y = 0.98
+    const val MIN_IN_FRAME = 0.5
+
+    private fun median(v: List<Double>): Double {
+        val s = v.sorted()
+        return if (s.size % 2 == 1) s[s.size / 2] else (s[s.size / 2 - 1] + s[s.size / 2]) / 2
+    }
+
+    fun shouldersInFrame(x: Clip, t: Int): Boolean {
+        for (n in intArrayOf(Layout.L_SHOULDER, Layout.R_SHOULDER)) {
+            val px = x[t, n, 0]; val py = x[t, n, 1]; val pz = x[t, n, 2]
+            if (px.isNaN() || py.isNaN() || pz.isNaN()) return false
+            if (py > IN_FRAME_Y || py < 0) return false  // vertical only, as in Python
+        }
+        return true
+    }
+
+    /** Port of features.ensure_shoulders: close-up clips get shoulders placed from the face. */
+    fun ensureShoulders(x: Clip): Pair<Clip, Boolean> {
+        val inFrame = (0 until x.frames).count { shouldersInFrame(x, it) }
+        if (inFrame.toDouble() / x.frames >= MIN_IN_FRAME) return x to true
+        val F = Layout.FACE
+        val ok = (0 until x.frames).filter { t ->
+            intArrayOf(Layout.F_EYE_R, Layout.F_EYE_L, Layout.F_FOREHEAD, Layout.F_CHIN).all { k ->
+                !x[t, F + k, 0].isNaN() && !x[t, F + k, 1].isNaN()
+            }
+        }
+        if (ok.isEmpty()) return x to false
+        fun med(k: Int, c: Int) = median(ok.map { x[it, F + k, c] })
+        val erx = med(Layout.F_EYE_R, 0); val ery = med(Layout.F_EYE_R, 1)
+        val elx = med(Layout.F_EYE_L, 0); val ely = med(Layout.F_EYE_L, 1)
+        val fh = median(ok.map {
+            Math.hypot(x[it, F + Layout.F_FOREHEAD, 0] - x[it, F + Layout.F_CHIN, 0],
+                       x[it, F + Layout.F_FOREHEAD, 1] - x[it, F + Layout.F_CHIN, 1])
+        }) + 1e-6
+        val ax = elx - erx; val ay = ely - ery
+        val an = Math.hypot(ax, ay) + 1e-8
+        val ux = ax / an; val uy = ay / an
+        var dx = -uy; var dy = ux
+        if (dy < 0) { dx = -dx; dy = -dy }
+        val mx = (elx + erx) / 2 + dx * SHOULDER_DROP * fh
+        val my = (ely + ery) / 2 + dy * SHOULDER_DROP * fh
+        val zs = ArrayList<Double>()
+        for (t in 0 until x.frames) for (n in intArrayOf(Layout.L_SHOULDER, Layout.R_SHOULDER))
+            if (!x[t, n, 2].isNaN()) zs.add(x[t, n, 2])
+        val z = if (zs.isNotEmpty()) median(zs)
+                else median((0 until x.frames).map { x[it, F + Layout.F_NOSE, 2] }.filter { !it.isNaN() }.ifEmpty { listOf(0.0) })
+        val out = x.copy()
+        for (t in 0 until x.frames) {
+            out[t, Layout.L_SHOULDER, 0] = mx + ux * SHOULDER_HALF * fh
+            out[t, Layout.L_SHOULDER, 1] = my + uy * SHOULDER_HALF * fh
+            out[t, Layout.L_SHOULDER, 2] = z
+            out[t, Layout.R_SHOULDER, 0] = mx - ux * SHOULDER_HALF * fh
+            out[t, Layout.R_SHOULDER, 1] = my - uy * SHOULDER_HALF * fh
+            out[t, Layout.R_SHOULDER, 2] = z
+            for (e in intArrayOf(Layout.L_ELBOW, Layout.R_ELBOW)) {
+                val ey = out[t, e, 1]
+                if (ey.isNaN() || ey > IN_FRAME_Y) for (c in 0 until 3) out[t, e, c] = Double.NaN
+            }
+        }
+        // Python returns float32 here
+        for (i in out.data.indices) out.data[i] = out.data[i].toFloat().toDouble()
+        return out to false
+    }
+
     fun fixHandSlots(x: Clip): Clip {
         val out = x.copy()
         for (t in 0 until x.frames) {
@@ -135,7 +203,8 @@ object Features {
 
     /** Features per frame: [T][DIM], NaN-free. */
     fun clipFeatures(raw: Clip, maxGap: Int = 6): Array<DoubleArray> {
-        var x = fixHandSlots(raw)
+        val (shown, realShoulders) = ensureShoulders(raw)
+        var x = fixHandSlots(shown)
         x = canonicalize(x)
         val (m, mirrored) = toRightDominant(x)
         val (xyz, interp) = fillGaps(m, maxGap)
@@ -190,7 +259,7 @@ object Features {
             row[o] = (xyz.point(t, Layout.FACE + Layout.F_MOUTH_L) - xyz.point(t, Layout.FACE + Layout.F_MOUTH_R)).norm()
             var poseOk = true
             for (n in intArrayOf(Layout.L_SHOULDER, Layout.R_SHOULDER)) for (c in 0 until 3) if (xyz[t, n, c].isNaN()) poseOk = false
-            row[O_QUAL + 4] = if (poseOk) 1.0 else 0.0
+            row[O_QUAL + 4] = if (poseOk && realShoulders) 1.0 else 0.0
             row[O_QUAL + 5] = if (mirrored) 1.0 else 0.0
             for (i in row.indices) {
                 val y = row[i].toFloat().toDouble() // Python casts groups to float32

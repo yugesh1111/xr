@@ -2,61 +2,61 @@
  {
   "video_id": "00625",
   "gloss": "ACCIDENT",
-  "python": "ACCIDENT",
-  "python_conf": 0.3811
+  "python": "WRONG",
+  "python_conf": 0.4664
  },
  {
   "video_id": "00634",
   "gloss": "ACCIDENT",
   "python": "ACCIDENT",
-  "python_conf": 0.9109
+  "python_conf": 0.9525
  },
  {
   "video_id": "01386",
   "gloss": "AFRICA",
   "python": "AFRICA",
-  "python_conf": 0.7686
+  "python_conf": 0.851
  },
  {
   "video_id": "01986",
   "gloss": "ALL",
   "python": "ALL",
-  "python_conf": 0.4003
+  "python_conf": 0.6961
  },
  {
   "video_id": "05727",
   "gloss": "BEFORE",
   "python": "BEFORE",
-  "python_conf": 0.2421
+  "python_conf": 0.3127
  },
  {
   "video_id": "05739",
   "gloss": "BEFORE",
-  "python": "ENJOY",
-  "python_conf": 0.396
+  "python": "BEFORE",
+  "python_conf": 0.7508
  },
  {
   "video_id": "05741",
   "gloss": "BEFORE",
-  "python": "LAST",
-  "python_conf": 0.5828
+  "python": "BEFORE",
+  "python_conf": 0.7456
  },
  {
   "video_id": "06335",
   "gloss": "BIRD",
   "python": "BIRD",
-  "python_conf": 0.8806
+  "python_conf": 0.8583
  },
  {
   "video_id": "06360",
   "gloss": "BIRTHDAY",
   "python": "BIRTHDAY",
-  "python_conf": 0.4112
+  "python_conf": 0.4652
  },
  {
   "video_id": "06845",
   "gloss": "BLUE",
   "python": "BLUE",
-  "python_conf": 0.4901
+  "python_conf": 0.7813
  }
 ]

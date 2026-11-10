@@ -67,6 +67,55 @@ def jitter(x, rng):
     return x
 
 
+def close_up(x, rng, aspect=None, face_frac=None):
+    """Phone held close: zoom in on the face so the shoulders (and often the
+    elbows and parts of the hands) fall outside a portrait frame.
+
+    Pose points keep their coordinates off-screen, as MediaPipe extrapolates
+    them; a hand is dropped in frames where most of it is outside the image,
+    as MediaPipe loses it. Coordinates are in units of image height, x scaled
+    by the aspect ratio (as in extract.py)."""
+    f = x[:, L.FACE]
+    eyes = np.nanmedian(f[:, [3, 4], :2].reshape(-1, 2), axis=0)
+    fh = np.nanmedian(np.linalg.norm(f[:, L.F_FOREHEAD, :2] - f[:, L.F_CHIN, :2], axis=-1))
+    if np.isnan(eyes).any() or not fh > 0:
+        return x
+    aspect = aspect or rng.choice([9 / 16, 3 / 4])
+    # face height as a share of image height: ~0.25 = arm's length with the
+    # shoulders at the bottom edge, ~0.5 = phone right in front of the face
+    target_fh = face_frac or rng.uniform(0.25, 0.55)
+    s = target_fh / fh
+    dst = np.array([aspect / 2 + rng.uniform(-0.08, 0.08), rng.uniform(0.25, 0.40)])
+    out = x.copy()
+    out[..., :2] = (x[..., :2] - eyes) * s + dst
+    out[..., 2] = x[..., 2] * s
+    for hand in (L.LHAND, L.RHAND):
+        h = out[:, hand, :2]
+        with np.errstate(invalid="ignore"):
+            inside = (h[..., 0] >= 0) & (h[..., 0] <= aspect) & (h[..., 1] >= 0) & (h[..., 1] <= 1)
+        lost = inside.mean(1) < 0.6
+        out[lost, hand] = np.nan
+    return out.astype(np.float32)
+
+
+def far_away(x, rng, scale=None):
+    """Phone further away: the signer gets smaller in the image. Features are
+    scale-free, so what really changes is that MediaPipe's error (a few pixels)
+    becomes a larger share of a smaller hand. Shrink about the body centre and
+    add tracking noise in image units, stronger on the fingers."""
+    s = scale or rng.uniform(0.35, 0.7)
+    c = np.nanmean(x[:, [L.L_SHOULDER, L.R_SHOULDER], :2].reshape(-1, 2), axis=0)
+    if np.isnan(c).any():
+        c = np.nanmean(x[..., :2].reshape(-1, 2), axis=0)
+    out = x.copy()
+    out[..., :2] = (x[..., :2] - c) * s + c
+    out[..., 2] = x[..., 2] * s
+    out += rng.normal(0, rng.uniform(0.001, 0.003), out.shape).astype(np.float32)
+    hands = slice(L.LHAND.start, L.RHAND.stop)
+    out[:, hands] += rng.normal(0, rng.uniform(0.001, 0.004), out[:, hands].shape).astype(np.float32)
+    return out.astype(np.float32)
+
+
 # "strong" targets the weak spots found by scripts/robustness.py:
 # signers turned sideways and a hand lost for a long stretch.
 STRENGTH = {
@@ -75,9 +124,14 @@ STRENGTH = {
 }
 
 
-def augment(xyz, rng, strength="default"):
+def augment(xyz, rng, strength="default", p_close=0.0, p_far=0.0):
     cfg = STRENGTH[strength]
     x = np.asarray(xyz, dtype=np.float32)
+    u = rng.random()
+    if u < p_close:
+        x = close_up(x, rng)
+    elif u < p_close + p_far:
+        x = far_away(x, rng)
     x = rotate_view(x, rng, max_yaw=cfg["max_yaw"])
     x = vary_anatomy(x, rng)
     x = change_speed(x, rng)
