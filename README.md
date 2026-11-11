@@ -12,6 +12,7 @@ Language Prediction on Edge Device"**.
 | | |
 |---|---|
 | **Android app (APK)** | [EchoGesture-arm64.apk](https://github.com/Amritha902/xr/releases/latest/download/EchoGesture-arm64.apk) - any 64-bit Android phone, Android 8+ |
+| **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
 | **Demo video** | _coming soon (recording on a Galaxy A36)_ |
 | **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
 
@@ -122,7 +123,7 @@ Honest notes:
 
 ## Run it
 
-**On a phone:** install the APK above, allow the camera, sign in front of it.
+**On a phone:** install the APK above and follow the [user guide](docs/USER_GUIDE.md).
 
 **On a computer:**
 
