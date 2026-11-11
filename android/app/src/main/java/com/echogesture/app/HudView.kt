@@ -32,8 +32,10 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     var tooClose = false  // face fills too much of the frame: hands are mostly out of view
     var tooDark = false   // picture too dark for reliable hand tracking
     var ringLight = false // front camera in low light: white border lights the signer
-    var sentences: List<String> = emptyList()  // finished sentences, oldest first
+    var turns: List<com.echogesture.core.Conversation.Turn> = emptyList()  // signed + spoken, oldest first
     var forming: String? = null                // the sentence still being signed
+    var hearing: String? = null                // the reply being spoken right now (partial)
+    var listening = false                      // microphone open for a reply
     var onClearSentence: (() -> Unit)? = null  // tap on the sentence card
     private var sentenceRect: RectF? = null
     var status = ""       // progress text (test mode); shown when not empty
@@ -212,26 +214,34 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
 
     private val sentencePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = bold; textSize = 22 * sp }
 
-    /** Finished sentences dim, the one being signed bright with a caret while signing.
-     *  Shows the last 3 lines; tap the card to clear. Returns the new bottom edge. */
+    /** The conversation, subtitle-style: signed sentences (mint marker) and spoken
+     *  replies (blue marker), older turns dimmed, the live line bright. Shows the
+     *  last 4 lines; tap the card to clear. Returns the new bottom edge. */
     private fun drawSentence(c: Canvas, m: Float, bottom: Float): Float {
-        val open = forming
-        if (sentences.isEmpty() && open == null && !signing) { sentenceRect = null; return bottom }
+        val open = forming; val heard = hearing
+        if (turns.isEmpty() && open == null && heard == null && !signing && !listening) { sentenceRect = null; return bottom }
         val text = android.text.SpannableStringBuilder()
-        for (s in sentences) {
-            val st = text.length; text.append(s).append(' ')
-            text.setSpan(android.text.style.ForegroundColorSpan(cDim), st, text.length, 0)
+        fun line(marker: Int, body: String, color: Int) {
+            if (text.isNotEmpty()) text.append('\n')
+            var st = text.length; text.append("● ")
+            text.setSpan(android.text.style.ForegroundColorSpan(marker), st, text.length, 0)
+            text.setSpan(android.text.style.RelativeSizeSpan(0.6f), st, text.length - 1, 0)
+            st = text.length; text.append(body)
+            text.setSpan(android.text.style.ForegroundColorSpan(color), st, text.length, 0)
         }
-        if (open != null) text.append(open)
-        if (signing) {
-            val st = text.length; text.append(if (open == null && sentences.isEmpty()) "…" else " …")
-            text.setSpan(android.text.style.ForegroundColorSpan(cSure), st, text.length, 0)
+        val live = open != null || heard != null || signing || listening
+        turns.forEachIndexed { i, t ->
+            val latest = i == turns.size - 1 && !live
+            val marker = if (t.who == com.echogesture.core.Conversation.Who.SIGNER) cSure else cLeft
+            line(marker, t.text, if (latest) cPaper else cDim)
         }
+        if (open != null || signing) line(cSure, (open ?: "") + if (signing) (if (open == null) "…" else " …") else "", cPaper)
+        if (heard != null || listening) line(cLeft, (heard ?: "") + if (listening) (if (heard == null) "Listening…" else " …") else "", cPaper)
         val pad = 16 * dp; val w = (width - 2 * m).toInt()
         sentencePaint.color = cPaper
         val layout = StaticLayout.Builder.obtain(text, 0, text.length, sentencePaint, w - (2 * pad).toInt())
             .setLineSpacing(0f, 1.15f).build()
-        val lines = minOf(3, layout.lineCount)
+        val lines = minOf(4, layout.lineCount)
         val firstLine = layout.lineCount - lines
         val textH = (layout.getLineBottom(layout.lineCount - 1) - layout.getLineTop(firstLine)).toFloat()
         val h = textH + 2 * pad

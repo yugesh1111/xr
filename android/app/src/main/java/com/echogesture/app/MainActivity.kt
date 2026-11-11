@@ -8,6 +8,11 @@ import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
+import android.content.Intent
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import com.echogesture.core.Conversation
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -58,7 +63,8 @@ class MainActivity : AppCompatActivity() {
     private val segmenter = Segmenter()
     private var stats = Stats(this)
     private var benchRunning = false
-    private var backCamera = false  // front: you sign to your own phone; Flip to caption someone else
+    // back camera: the brief is exocentric - the device films the person signing to you; Flip to sign to it yourself
+    private var backCamera = true
     private var camera: Camera? = null
     private var lightOn = false        // ring light (front) or torch (back) switched on for low light
     private var darkChecks = 0
@@ -67,7 +73,10 @@ class MainActivity : AppCompatActivity() {
     private var tts: TextToSpeech? = null
     @Volatile private var ttsReady = false
     private var ttsProblem: String? = null
-    private val sentence = com.echogesture.core.Sentence()
+    private val conversation = Conversation()
+    private val sentence = com.echogesture.core.Sentence(onClose = { conversation.add(Conversation.Who.SIGNER, it); refreshTalk() })
+    private var speech: SpeechRecognizer? = null
+    private lateinit var replyButton: Button
     private var frameIndex = 0L
     private var lastHandMs = 0L
     private var fps = 0.0
@@ -108,25 +117,31 @@ class MainActivity : AppCompatActivity() {
             if (speak && !ttsReady) Toast.makeText(this, ttsProblem ?: "Voice is still starting, try again in a second", Toast.LENGTH_LONG).show()
             else { if (speak) say("Voice on") else Toast.makeText(this, "Voice off", Toast.LENGTH_SHORT).show() }
         }
-        findViewById<Button>(R.id.bench).setOnClickListener { toggleBench(it as Button) }
+        replyButton = findViewById(R.id.reply)
+        replyButton.setOnClickListener { toggleReply() }
         testButton = findViewById(R.id.test)
         testButton.setOnClickListener {
             if (testing) { cancelTest = true; hud.status = "Stopping the test…"; hud.invalidate(); return@setOnClickListener }
-            AlertDialog.Builder(this).setTitle("Test with videos")
-                .setItems(arrayOf("Built-in WLASL test clips", "Pick a video…")) { _, which ->
-                    if (which == 0) runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
-                    else pickVideo.launch(arrayOf("video/*"))
+            AlertDialog.Builder(this).setTitle("Test and measure")
+                .setItems(arrayOf("Built-in WLASL test clips", "Pick a video…",
+                    if (benchRunning) "Stop measuring and save results" else "Measure speed, power and heat (10 min)")) { _, which ->
+                    when (which) {
+                        0 -> runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
+                        1 -> pickVideo.launch(arrayOf("video/*"))
+                        else -> toggleBench()
+                    }
                 }.show()
         }
         // screenshot helper: adb shell am start -n com.echogesture.app/.MainActivity --es demo bird --ef conf 0.52 --ez close true
         intent.getStringExtra("demo")?.let { w ->
             hud.word = w.uppercase(); hud.confidence = intent.getFloatExtra("conf", 0.9f)
             hud.alternatives = listOf("BOOK", "BLUE"); hud.guess = intent.getBooleanExtra("guess", false); hud.shownAtMs = SystemClock.uptimeMillis() + 600_000
-            hud.sentences = listOf("Man help now."); hud.forming = "Mother drink ${w.lowercase()}"; demoClose = intent.getBooleanExtra("close", false)
+            conversation.add(Conversation.Who.SIGNER, "Man help now."); conversation.add(Conversation.Who.SPEAKER, "Sure, what happened?")
+            hud.turns = conversation.turns(); hud.forming = "Mother drink ${w.lowercase()}"; demoClose = intent.getBooleanExtra("close", false)
         }
         hud.onClearSentence = {
-            sentence.clear(); hud.sentences = emptyList(); hud.forming = null; hud.invalidate()
-            Toast.makeText(this, "Sentence cleared", Toast.LENGTH_SHORT).show()
+            sentence.clear(); conversation.clear(); refreshTalk()
+            Toast.makeText(this, "Conversation cleared", Toast.LENGTH_SHORT).show()
         }
         tts = TextToSpeech(this) { status -> runOnUiThread { setUpVoice(status) } }
 
@@ -141,8 +156,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
-        if (results.firstOrNull() == PackageManager.PERMISSION_GRANTED) startCamera()
-        else Toast.makeText(this, "Camera permission is needed", Toast.LENGTH_LONG).show()
+        val ok = results.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        when {
+            code == 2 && ok -> startReply()
+            code == 2 -> Toast.makeText(this, "Microphone permission is needed for replies", Toast.LENGTH_LONG).show()
+            ok -> startCamera()
+            else -> Toast.makeText(this, "Camera permission is needed", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun startCamera() {
@@ -206,7 +226,7 @@ class MainActivity : AppCompatActivity() {
             if (hands) lastHandMs = now
             segmenter.push(frame, now)?.let { show(it) }
             // Sentence is only touched on the UI thread (show() adds words there)
-            runOnUiThread { if (sentence.tick(SystemClock.uptimeMillis()) != null) { hud.sentences = sentence.finished(); hud.forming = sentence.forming() } }
+            runOnUiThread { sentence.tick(SystemClock.uptimeMillis()) }
             hud.signing = segmenter.state == Segmenter.State.SIGNING
             hud.leftHand = left; hud.rightHand = right
             hud.tooClose = demoClose || faceShare(frame) > TOO_CLOSE_FACE_SHARE
@@ -293,7 +313,7 @@ class MainActivity : AppCompatActivity() {
             }
             if (sure) {
                 sentence.add(r.words[0], SystemClock.uptimeMillis())
-                hud.sentences = sentence.finished(); hud.forming = sentence.forming()
+                refreshTalk()
                 if (speak) say(r.words[0].lowercase())
             }
             hud.perf += ", model ${"%.1f".format(r.modelMs)} ms"
@@ -390,12 +410,77 @@ class MainActivity : AppCompatActivity() {
         if (seg.size >= 8) show(seg) else runOnUiThread { Toast.makeText(this, "Sign first, then tap", Toast.LENGTH_SHORT).show() }
     }
 
-    private fun toggleBench(b: Button) {
+    private fun refreshTalk() {
+        hud.turns = conversation.turns(); hud.forming = sentence.forming(); hud.invalidate()
+    }
+
+    // --- replies: the hearing person speaks, the deaf user reads ---------------------
+
+    private fun toggleReply() {
+        if (hud.listening) { speech?.stopListening(); return }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 2)
+        else startReply()
+    }
+
+    /** On-device recognition where the phone has it (Android 12+), so the reply's
+     *  audio stays on the phone like the video does. */
+    private fun startReply() {
+        val onDevice = Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+        val sr = when {
+            onDevice -> SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            SpeechRecognizer.isRecognitionAvailable(this) -> SpeechRecognizer.createSpeechRecognizer(this)
+            else -> { Toast.makeText(this, "This phone has no speech recognition", Toast.LENGTH_LONG).show(); return }
+        }
+        sentence.closeNow()  // the signer's sentence ends when the other person starts talking
+        speech?.destroy(); speech = sr
+        fun done() {
+            hud.listening = false; hud.hearing = null; refreshTalk()
+            replyButton.text = "Reply"
+            replyButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_mic, 0, 0)
+        }
+        fun best(b: Bundle?) = b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+        sr.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(p: Bundle?) { hud.listening = true; hud.invalidate() }
+            override fun onPartialResults(b: Bundle?) { best(b)?.let { if (it.isNotBlank()) { hud.hearing = it; hud.invalidate() } } }
+            override fun onResults(b: Bundle?) {
+                best(b)?.let { conversation.add(Conversation.Who.SPEAKER, it.replaceFirstChar { c -> c.uppercase() }) }
+                done()
+            }
+            override fun onError(error: Int) {
+                done()
+                val msg = when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Didn't catch that. Tap Reply and speak again."
+                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_SERVER ->
+                        "Offline speech isn't installed. Settings > System > Languages > Speech > download English."
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is needed for replies"
+                    else -> "Speech recognition stopped (code $error)"
+                }
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(v: Float) {}
+            override fun onBufferReceived(b: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onEvent(t: Int, b: Bundle?) {}
+        })
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+            .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+        hud.listening = true; hud.hearing = null; hud.invalidate()
+        replyButton.text = "Done"
+        replyButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
+        sr.startListening(intent)
+    }
+
+    private fun toggleBench() {
         if (!benchRunning) {
-            stats = Stats(this); benchRunning = true; hud.showPerf = true; b.text = "Stop"
-            Toast.makeText(this, "Measuring. Unplug the phone and sign for 10 minutes, then tap Stop.", Toast.LENGTH_LONG).show()
+            stats = Stats(this); benchRunning = true; hud.showPerf = true
+            Toast.makeText(this, "Measuring. Unplug the phone and sign for 10 minutes, then Test > Stop measuring.", Toast.LENGTH_LONG).show()
         } else {
-            benchRunning = false; hud.showPerf = false; b.text = "Bench"
+            benchRunning = false; hud.showPerf = false
             val dir = stats.save("${Build.MANUFACTURER} ${Build.MODEL}")
             AlertDialog.Builder(this).setTitle("Benchmark").setMessage(stats.summary() + "\n\nSaved to\n$dir")
                 .setPositiveButton("OK", null).show()
@@ -413,5 +498,6 @@ class MainActivity : AppCompatActivity() {
         worker.execute { landmarks?.close(); recognizer?.close() }
         worker.shutdown()
         tts?.shutdown()
+        speech?.destroy()
     }
 }

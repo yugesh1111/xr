@@ -1,4 +1,6 @@
-# EchoGesture - full technical record
+# Palmcast - full technical record
+
+(Product name Palmcast; built for Track 02, "EchoGesture".)
 
 On-device, signer-independent **American Sign Language (ASL)** word
 recognition for the Samsung PRISM XR Hackathon 2026, Track 02
@@ -470,7 +472,7 @@ emulator has to run on a laptop:
 
 1. Android Studio -> Device Manager -> create a phone (e.g. Pixel 8) with an
    **x86_64** system image, API 34 or 35.
-2. Edit the device -> Show Advanced Settings -> Camera -> Front: **Webcam0**, Back: **Emulated**
+2. Edit the device -> Show Advanced Settings -> Camera -> Back: **Webcam0**, Front: **Emulated**
    (the emulator can give the webcam to only one of its cameras)
    (your laptop webcam becomes the phone camera).
 3. Start it and drag `app-x86_64-release.apk` onto the emulator window.

@@ -31,3 +31,16 @@ class SentenceTest {
         assertEquals(listOf("B.", "C."), s.finished())
     }
 }
+
+class ConversationTest {
+    @Test fun signedAndSpokenTurnsKeepOrder() {
+        val c = Conversation(keep = 3)
+        val s = Sentence(onClose = { c.add(Conversation.Who.SIGNER, it) })
+        s.add("MAN", 0); s.add("HELP", 1000)
+        assertEquals("Man help.", s.closeNow())
+        c.add(Conversation.Who.SPEAKER, "Sure, what do you need?")
+        s.add("DRINK", 5000); s.tick(10000)
+        assertEquals(listOf("Man help.", "Sure, what do you need?", "Drink."), c.turns().map { it.text })
+        assertEquals(Conversation.Who.SPEAKER, c.turns()[1].who)
+    }
+}

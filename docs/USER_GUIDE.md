@@ -1,13 +1,13 @@
-# EchoGesture - how to use the app
+# Palmcast - how to use the app
 
 ## 1. Install
 
-1. On the phone, open the [APK link](https://github.com/Amritha902/xr/releases/latest/download/EchoGesture-arm64.apk) and download it.
+1. On the phone, open the [APK link](https://github.com/Amritha902/xr/releases/latest/download/Palmcast-arm64.apk) and download it.
 2. Tap the downloaded file. If Android says the source isn't allowed, tap
    **Settings**, turn on **Allow from this source**, go back, tap **Install**.
 3. If Play Protect warns about an unknown app, tap **Install anyway**
    (the app is not on the Play Store, that is all the warning means).
-4. Open **EchoGesture** and tap **Allow** for the camera. That is the only
+4. Open **Palmcast** and tap **Allow** for the camera. That is the only
    permission it asks for. It never uses the internet.
 
 Needs a 64-bit Android phone with Android 8 or newer.
@@ -15,8 +15,8 @@ Needs a 64-bit Android phone with Android 8 or newer.
 ## 2. Set up
 
 - Prop the phone up (a stand, a cup, a stack of books) so your hands stay free.
-- **Front camera** (default) to sign yourself; **Flip** for the back camera to
-  caption someone else.
+- **Back camera** (default): point the phone at the person signing to you and
+  read their words. **Flip** to the front camera to sign to the phone yourself.
 - Distance: your head, chest and both hands in view. Arm's length works;
   further away also works.
 - Light: face a window or a lamp. If it's too dark the app turns on the
@@ -66,8 +66,8 @@ white, who, woman, work, wrong, year, yes.
 | **Flip** | front / back camera |
 | **Recognise** | give a word now for what you just signed (if it didn't show one by itself) |
 | **Voice** | speak each word aloud (offline voice); the speaker icon shows on or off |
-| **Bench** | start a measurement run (see 6); the button turns into **Stop** |
-| **Test** | run test videos instead of the camera (see 5); tap **Stop** to end early |
+| **Reply** | the other person speaks their answer; their words appear in the conversation (blue marker). Tap **Done** to stop early. Uses the phone's on-device speech recognition |
+| **Test** | test videos (see 5) and the 10-minute measurement run (see 6); tap **Stop** to end a test early |
 
 ## 5. Check it works (no signer needed)
 
@@ -82,8 +82,8 @@ as the computer.
 ## 6. Measure speed, power and heat (for results.csv)
 
 1. Charge the phone, then **unplug it** (power is read from the battery).
-2. Tap **Bench** (speed numbers appear above the buttons), then sign words continuously for **10 minutes**.
-3. Tap **Stop**. A summary appears and a file is saved to
+2. Tap **Test -> Measure speed, power and heat** (speed numbers appear above the buttons), then sign words continuously for **10 minutes**.
+3. Tap **Test -> Stop measuring and save results**. A summary appears and a file is saved to
    `Android/data/com.echogesture.app/files/bench_<time>/results_device.csv`.
 4. Copy that file to the computer (USB file transfer, or
    `adb pull /sdcard/Android/data/com.echogesture.app/files/`) into `results/`, then:
@@ -102,7 +102,7 @@ This fills the latency, power and thermal rows of `results/results.csv`.
 
 | Problem | Try |
 |---|---|
-| Black camera | close and reopen the app; check camera permission in Settings -> Apps -> EchoGesture |
+| Black camera | close and reopen the app; check camera permission in Settings -> Apps -> Palmcast |
 | `hands –` all the time | step back, more light, keep hands in front of your chest |
 | No word appears | sign a bit bigger and slower, start and end with hands down, or tap **Recognise** |
 | Wrong word | check it is one of the 100 words; sign facing the camera |

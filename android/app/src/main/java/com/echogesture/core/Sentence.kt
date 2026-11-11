@@ -16,6 +16,8 @@ class Sentence(
     private val repeatMs: Long = 1500,
     private val keep: Int = 2,
     private val maxWords: Int = 12,
+    /** Called with each sentence as it closes (pause, length cap or [closeNow]). */
+    private val onClose: (String) -> Unit = {},
 ) {
     private val closed = ArrayDeque<String>()
     private val open = ArrayList<String>()
@@ -38,6 +40,9 @@ class Sentence(
 
     fun clear() { closed.clear(); open.clear() }
 
+    /** Close the open sentence now (e.g. the other person starts replying). */
+    fun closeNow(): String? = if (open.isNotEmpty()) close() else null
+
     /** Finished sentences (oldest first), then the one still forming, or null. */
     fun finished(): List<String> = closed.toList()
     fun forming(): String? = if (open.isEmpty()) null else format(open, false)
@@ -47,6 +52,7 @@ class Sentence(
         val s = format(open, true)
         closed.addLast(s); open.clear()
         while (closed.size > keep) closed.removeFirst()
+        onClose(s)
         return s
     }
 

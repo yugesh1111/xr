@@ -53,7 +53,9 @@ def corrupt_video_job(row, root, name, enhance=False):
     out = root / f"landmarks_{name}{'_enh' if enhance else ''}" / f"{row['video_id']}.npz"
     if not out.exists():
         src = next((root / "raw").glob(f"{row['video_id']}.*"))
-        xyz = extract_video(src, int(row["frame_start"]), int(row["frame_end"]), transform=C.VIDEO[name] if name != "clean" else None, enhance=enhance)
+        t = C.VIDEO[name] if name != "clean" else None
+        t = t.fresh() if hasattr(t, "fresh") else t  # stateful corruptions start over per clip
+        xyz = extract_video(src, int(row["frame_start"]), int(row["frame_end"]), transform=t, enhance=enhance)
         np.savez_compressed(out, xyz=xyz.astype(np.float16))
     return out
 

@@ -39,7 +39,30 @@ def low_res(rgb, scale=0.35):
     return cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)
 
 
-VIDEO = {"dark": dark, "blur": blur, "rotate15": rotate, "low_res": low_res}
+class PassingOccluder:
+    """Occlusion: something passes between camera and signer (a person walking
+    by, an arm, a coffee cup). A vertical bar 22% of the frame wide, in a dull
+    clothing colour, sweeps left to right across the frame every 60 frames
+    (~2 s at 30 fps), so for part of every sign one or both hands are hidden.
+    Stateful per clip: call .fresh() for each new video."""
+
+    def __init__(self, width=0.22, period=60, color=(70, 62, 58)):
+        self.width, self.period, self.color, self.i = width, period, color, 0
+
+    def fresh(self):
+        return PassingOccluder(self.width, self.period, self.color)
+
+    def __call__(self, rgb):
+        h, w = rgb.shape[:2]
+        bw = int(w * self.width)
+        x0 = int((self.i % self.period) / self.period * (w + bw)) - bw
+        self.i += 1
+        out = rgb.copy()
+        out[:, max(x0, 0):max(min(x0 + bw, w), 0)] = self.color
+        return out
+
+
+VIDEO = {"dark": dark, "blur": blur, "rotate15": rotate, "low_res": low_res, "occlusion": PassingOccluder()}
 
 
 def random_degradation(seed):

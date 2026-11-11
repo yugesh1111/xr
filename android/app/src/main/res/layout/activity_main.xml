@@ -45,8 +45,8 @@
         <Button android:id="@+id/test" style="@style/BarButton"
             android:drawableTop="@drawable/ic_test" android:text="Test"
             android:contentDescription="Run test videos" />
-        <Button android:id="@+id/bench" style="@style/BarButton"
-            android:drawableTop="@drawable/ic_bench" android:text="Bench"
-            android:contentDescription="Start a 10 minute measurement run" />
+        <Button android:id="@+id/reply" style="@style/BarButton"
+            android:drawableTop="@drawable/ic_mic" android:text="Reply"
+            android:contentDescription="Speak a reply; your words appear as captions" />
     </LinearLayout>
 </FrameLayout>

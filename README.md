@@ -1,4 +1,4 @@
-# EchoGesture
+# Palmcast
 
 Sign language to text, live, on a phone, with no internet.
 
@@ -11,7 +11,7 @@ Language Prediction on Edge Device"**.
 
 | | |
 |---|---|
-| **Android app (APK)** | [EchoGesture-arm64.apk](https://github.com/Amritha902/xr/releases/latest/download/EchoGesture-arm64.apk) - any 64-bit Android phone, Android 8+ |
+| **Android app (APK)** | [Palmcast-arm64.apk](https://github.com/Amritha902/xr/releases/latest/download/Palmcast-arm64.apk) - any 64-bit Android phone, Android 8+ |
 | **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
 | **Demo video** | _coming soon_ - plan in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
 | **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
@@ -20,7 +20,7 @@ Language Prediction on Edge Device"**.
 
 Most deaf and hard-of-hearing people sign, and most hearing people don't.
 Cloud translation needs a connection and sends video of people to a server.
-EchoGesture does it on the device: private, works offline, and fast enough to
+Palmcast does it on the device: private, works offline, and fast enough to
 keep up with a conversation one word at a time.
 
 ## See it work
@@ -47,8 +47,12 @@ keep up with a conversation one word at a time.
 - **Low light.** Turns on the torch (back camera) or a white ring light on the
   screen (front camera) when the scene is dark.
 - **Voice.** Optional offline text-to-speech of each word.
+- **Two-way conversation.** Tap **Reply** and the hearing person answers out
+  loud; their words appear in the same conversation, so the deaf user reads
+  them. Signed lines get a mint marker, spoken ones a blue marker. Uses the
+  phone's on-device speech recognition (Android 12+).
 - **Test mode.** Run the built-in test clips or any video on the phone.
-- **Bench mode.** Logs latency, power and temperature for 10 minutes and saves
+- **Measurement run** (Test menu). Logs latency, power and temperature for 10 minutes and saves
   a `results_device.csv`.
 
 Vocabulary: the 100 words of WLASL100, the list the organisers asked for.
@@ -127,7 +131,7 @@ Honest notes:
   earlier held-out results, so 78.1% is a little optimistic.
 - WLASL has only ~10 clips per word; one new person can score much higher or
   lower than the average.
-- Phone latency, power and heat need a run on a real phone (Bench button).
+- Phone latency, power and heat need a run on a real phone (Test -> Measure).
 
 ## Run it
 
