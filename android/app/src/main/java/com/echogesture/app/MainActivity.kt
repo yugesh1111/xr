@@ -25,6 +25,11 @@ import android.util.Size
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import android.view.WindowManager
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.camera.core.Camera
 import com.echogesture.core.Layout
 import com.echogesture.core.Segmenter
@@ -62,6 +67,7 @@ class MainActivity : AppCompatActivity() {
     private var fps = 0.0
     private var lastFrameMs = 0L
     @Volatile private var testing = false
+    private var demoClose = false
     private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) runTest { t -> listOf(t.pick(uri)) }
     }
@@ -71,11 +77,26 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         preview = findViewById(R.id.preview)
         hud = findViewById(R.id.hud)
+        // draw under the status and navigation bars; keep text and buttons clear of them
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val bar = findViewById<View>(R.id.bar)
+        val barMargin = (bar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        ViewCompat.setOnApplyWindowInsetsListener(hud) { _, insets ->
+            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            hud.insetTop = sys.top.toFloat()
+            (bar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = barMargin + sys.bottom
+            bar.requestLayout()
+            insets
+        }
+        bar.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> hud.barTop = v.top.toFloat(); hud.invalidate() }
         findViewById<Button>(R.id.flip).setOnClickListener { backCamera = !backCamera; startCamera() }
         findViewById<Button>(R.id.now).setOnClickListener { recognizeNow() }
         findViewById<Button>(R.id.speak).setOnClickListener {
             speak = !speak
-            (it as Button).text = if (speak) "Voice on" else "Voice off"
+            val b = it as Button
+            b.setCompoundDrawablesRelativeWithIntrinsicBounds(0, if (speak) R.drawable.ic_voice_on else R.drawable.ic_voice_off, 0, 0)
+            b.contentDescription = "Speak words aloud: " + if (speak) "on" else "off"
+            Toast.makeText(this, if (speak) "Voice on" else "Voice off", Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.bench).setOnClickListener { toggleBench(it as Button) }
         findViewById<Button>(R.id.test).setOnClickListener {
@@ -84,6 +105,12 @@ class MainActivity : AppCompatActivity() {
                     if (which == 0) runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
                     else pickVideo.launch(arrayOf("video/*"))
                 }.show()
+        }
+        // screenshot helper: adb shell am start -n com.echogesture.app/.MainActivity --es demo bird --ef conf 0.52 --ez close true
+        intent.getStringExtra("demo")?.let { w ->
+            hud.word = w.uppercase(); hud.confidence = intent.getFloatExtra("conf", 0.9f)
+            hud.alternatives = listOf("BOOK", "BLUE"); hud.shownAtMs = SystemClock.uptimeMillis() + 600_000
+            hud.transcript = listOf("MOTHER", "WANT", "DRINK", w.uppercase()); demoClose = intent.getBooleanExtra("close", false)
         }
         tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts?.language = Locale.US }
 
@@ -145,13 +172,14 @@ class MainActivity : AppCompatActivity() {
             stats.frame(ms)
             if (lastFrameMs > 0) fps = 0.9 * fps + 0.1 * (1000.0 / (now - lastFrameMs).coerceAtLeast(1))
             lastFrameMs = now
-            val hands = !frame[33 * 3].isNaN() || !frame[54 * 3].isNaN()
+            val left = !frame[Layout.LHAND * 3].isNaN(); val right = !frame[Layout.RHAND * 3].isNaN()
+            val hands = left || right
             if (hands) lastHandMs = now
             segmenter.push(frame)?.let { show(it) }
             hud.signing = segmenter.state == Segmenter.State.SIGNING
-            hud.handsSeen = hands
-            hud.tooClose = faceShare(frame) > TOO_CLOSE_FACE_SHARE
-            hud.status = "${"%.0f".format(fps)} fps  landmarks ${"%.0f".format(ms)} ms" + if (benchRunning) "  [bench]" else ""
+            hud.leftHand = left; hud.rightHand = right
+            hud.tooClose = demoClose || faceShare(frame) > TOO_CLOSE_FACE_SHARE
+            hud.perf = "${"%.0f".format(fps)} fps, landmarks ${"%.0f".format(ms)} ms"
             hud.setFrame(frame, bmp.width, bmp.height)
         }
     }
@@ -233,7 +261,7 @@ class MainActivity : AppCompatActivity() {
                 hud.transcript = transcript.toList()
                 if (speak) tts?.speak(r.words[0].lowercase(), TextToSpeech.QUEUE_ADD, null, "w")
             }
-            hud.status += "  model ${"%.1f".format(r.modelMs)} ms"
+            hud.perf += ", model ${"%.1f".format(r.modelMs)} ms"
             hud.invalidate()
         }
     }
@@ -246,18 +274,36 @@ class MainActivity : AppCompatActivity() {
             val rows = runCatching { job(VideoTester(this, rec)) }
             testing = false
             runOnUiThread {
-                val text = rows.fold({ list ->
+                hud.status = ""; hud.invalidate()
+                val dim = ContextCompat.getColor(this, R.color.paper_dim)
+                val sure = ContextCompat.getColor(this, R.color.sure)
+                val maybe = ContextCompat.getColor(this, R.color.maybe)
+                val text = android.text.SpannableStringBuilder()
+                fun add(t: String, color: Int? = null, bold: Boolean = false, rel: Float = 1f) {
+                    val st = text.length; text.append(t)
+                    val sp = android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    color?.let { text.setSpan(android.text.style.ForegroundColorSpan(it), st, text.length, sp) }
+                    if (bold) text.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, text.length, sp)
+                    if (rel != 1f) text.setSpan(android.text.style.RelativeSizeSpan(rel), st, text.length, sp)
+                }
+                rows.fold({ list ->
                     val right = list.count { it.truth != null && it.truth == it.app }
                     val same = list.count { it.python != null && it.python == it.app }
-                    val head = if (list.any { it.truth != null })
-                        "Correct: $right/${list.size}   Same as Python: $same/${list.size}\n\n" else ""
-                    head + list.joinToString("\n") { r ->
-                        val mark = when { r.truth == null -> "•"; r.truth == r.app -> "✓"; else -> "✗" }
-                        "$mark ${r.truth ?: r.name} → ${r.app} (${(r.confidence * 100).toInt()}%)" +
-                            (r.python?.let { "  [python: $it]" } ?: "") +
-                            "\n    ${r.frames} frames, landmarks ${"%.0f".format(r.landmarkMsPerFrame)} ms/frame, model ${"%.1f".format(r.modelMs)} ms"
+                    if (list.any { it.truth != null }) {
+                        add("$right of ${list.size} correct\n", bold = true, rel = 1.25f)
+                        add("Same answer as the computer version: $same of ${list.size}\n\n", dim)
                     }
-                }, { "Test failed: ${it.message}" })
+                    list.forEachIndexed { i, r ->
+                        val ok = r.truth == null || r.truth == r.app
+                        add(if (r.truth == null) "• " else if (ok) "✓ " else "✗ ", if (ok) sure else maybe, bold = true)
+                        if (r.truth != null && !ok) add("${r.truth.lowercase()}, app said ")
+                        add(r.app.lowercase(), bold = true)
+                        add("  ${(r.confidence * 100).toInt()}%\n", dim)
+                        val py = r.python?.let { if (it == r.app) "computer agrees" else "computer said ${it.lowercase()}" }
+                        add("    ${listOfNotNull(py, "${r.frames} frames", "${"%.0f".format(r.landmarkMsPerFrame)} ms per frame", "model ${"%.1f".format(r.modelMs)} ms").joinToString(", ")}" +
+                            if (i < list.size - 1) "\n\n" else "", dim, rel = 0.85f)
+                    }
+                }, { add("The test could not run: ${it.message}") })
                 AlertDialog.Builder(this).setTitle("Test results").setMessage(text).setPositiveButton("OK", null).show()
             }
         }
@@ -270,10 +316,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun toggleBench(b: Button) {
         if (!benchRunning) {
-            stats = Stats(this); benchRunning = true; b.text = "Stop bench"
-            Toast.makeText(this, "Benchmark running - unplug the phone, sign for 10 minutes", Toast.LENGTH_LONG).show()
+            stats = Stats(this); benchRunning = true; hud.showPerf = true; b.text = "Stop"
+            Toast.makeText(this, "Measuring. Unplug the phone and sign for 10 minutes, then tap Stop.", Toast.LENGTH_LONG).show()
         } else {
-            benchRunning = false; b.text = "Bench"
+            benchRunning = false; hud.showPerf = false; b.text = "Bench"
             val dir = stats.save("${Build.MANUFACTURER} ${Build.MODEL}")
             AlertDialog.Builder(this).setTitle("Benchmark").setMessage(stats.summary() + "\n\nSaved to\n$dir")
                 .setPositiveButton("OK", null).show()

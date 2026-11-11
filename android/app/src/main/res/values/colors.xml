@@ -1,0 +1,12 @@
+<resources>
+    <!-- camera is the canvas; UI sits on a deep slate scrim -->
+    <color name="scrim">#B8141C2B</color>
+    <color name="scrim_soft">#8C141C2B</color>
+    <color name="slate">#141C2B</color>
+    <color name="paper">#F7F8FA</color>
+    <color name="paper_dim">#B3F7F8FA</color>
+    <color name="sure">#6FE0C0</color>
+    <color name="maybe">#F5C451</color>
+    <color name="left_hand">#8EC5FF</color>
+    <color name="right_hand">#FFB38A</color>
+</resources>

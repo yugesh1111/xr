@@ -5,15 +5,25 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.os.SystemClock
+import android.provider.Settings
+import android.text.Layout as TextLayout
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.echogesture.core.Layout
 
 /**
  * Heads-up display drawn over the camera preview.
- * Caption at the top (away from the signer's hands), coloured by confidence;
- * a low-confidence word is shown with a question mark and its alternatives
- * instead of being presented as certain. Status line at the bottom.
+ *
+ * Top: two status chips (listening / signing, and which hands are in view, in the
+ * same colours as the hand skeletons), then the caption card: the word in large
+ * type with a confidence meter under it (mint = sure, marigold = fairly sure, with
+ * the next guesses). The last words run underneath. Hints (too close, too dark)
+ * sit just above the button bar so they don't cover the signer's face.
  */
 class HudView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     var word = ""; var confidence = 0f; var alternatives: List<String> = emptyList()
@@ -21,71 +31,198 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     var tooClose = false  // face fills too much of the frame: hands are mostly out of view
     var tooDark = false   // picture too dark for reliable hand tracking
     var ringLight = false // front camera in low light: white border lights the signer
-    private val ring = Paint().apply { color = Color.WHITE; style = Paint.Style.STROKE }
     var transcript: List<String> = emptyList()
-    var status = ""
+    var status = ""       // progress text (test mode); shown when not empty
+    var perf = ""         // fps / latency, shown while a bench run is on
+    var showPerf = false
     var signing = false
-    var handsSeen = false
+    var leftHand = false; var rightHand = false
     var mirror = false
+    var insetTop = 0f     // status bar height
+    var barTop = 0f       // y where the button bar starts
+
     private var frame: FloatArray? = null
     private var aspect = 1f
     private var imgW = 1; private var imgH = 1
 
     private val dp = resources.displayMetrics.density
-    private val pill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(170, 0, 0, 0) }
-    private val big = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 40 * dp; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
-    private val small = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 15 * dp; color = Color.WHITE; textAlign = Paint.Align.CENTER }
-    private val mono = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 12 * dp; color = Color.WHITE }
-    private val bone = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = 3 * dp; color = Color.argb(200, 0, 220, 255) }
-    private val joint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(230, 255, 255, 255) }
+    private val sp = resources.displayMetrics.scaledDensity
+    private fun col(id: Int) = ContextCompat.getColor(context, id)
+    private val cScrim = col(R.color.scrim); private val cPaper = col(R.color.paper)
+    private val cDim = col(R.color.paper_dim); private val cSure = col(R.color.sure)
+    private val cMaybe = col(R.color.maybe); private val cLeft = col(R.color.left_hand)
+    private val cRight = col(R.color.right_hand)
+    private val regular = ResourcesCompat.getFont(context, R.font.atkinson_regular)
+    private val bold = ResourcesCompat.getFont(context, R.font.atkinson_bold)
+    private val reduceMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val ring = Paint().apply { color = Color.WHITE; style = Paint.Style.STROKE }
+    private val wordPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = bold; textSize = 46 * sp; color = cPaper }
+    private val body = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = regular; textSize = 15 * sp; color = cPaper }
+    private val chipText = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = bold; textSize = 13 * sp; color = cPaper }
+    private val bone = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND }
 
     fun setFrame(f: FloatArray, w: Int, h: Int) { frame = f; imgW = w; imgH = h; aspect = w.toFloat() / h; postInvalidate() }
 
     override fun onDraw(c: Canvas) {
         super.onDraw(c)
-        if (ringLight) {  // drawn first so captions and buttons stay on top
+        val now = SystemClock.uptimeMillis()
+        if (ringLight) {  // drawn first so everything else stays on top
             ring.strokeWidth = 56 * dp
             c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), ring)
         }
         drawSkeleton(c)
-        val w = width.toFloat()
-        // caption
-        if (word.isNotEmpty() && android.os.SystemClock.uptimeMillis() - shownAtMs < 4000) {
-            val color = when {
-                confidence >= 0.6f -> Color.rgb(80, 230, 120)
-                confidence >= 0.35f -> Color.rgb(255, 196, 0)
-                else -> Color.rgb(200, 200, 200)
-            }
-            big.color = color
-            val text = if (confidence >= 0.35f) word else "$word?"
-            val top = 40 * dp
-            c.drawRoundRect(RectF(16 * dp, top, w - 16 * dp, top + 96 * dp), 18 * dp, 18 * dp, pill)
-            c.drawText(text, w / 2, top + 50 * dp, big)
-            // alternatives only while the model is unsure between a few words
-            val alt = if (confidence < 0.6f && alternatives.isNotEmpty()) "or: " + alternatives.joinToString("  ·  ") else ""
-            c.drawText("${(confidence * 100).toInt()}%   $alt", w / 2, top + 80 * dp, small)
-        }
-        val hint = when {
-            tooDark -> "Too dark: turn on a light or face a window"
-            tooClose -> "Move the phone back a little so your hands are in view"
-            else -> null
-        }
-        if (hint != null) {
-            val top = height - 205 * dp
-            c.drawRoundRect(RectF(16 * dp, top, w - 16 * dp, top + 44 * dp), 12 * dp, 12 * dp, pill)
-            small.color = Color.rgb(255, 196, 0)
-            c.drawText(hint, w / 2, top + 28 * dp, small)
-            small.color = Color.WHITE
-        }
-        if (transcript.isNotEmpty()) {
-            c.drawText(transcript.joinToString(" "), w / 2, 160 * dp, small)
-        }
-        // status line
-        val state = if (signing) "● signing" else "○ listening"
-        val hands = if (handsSeen) "hands ✓" else "hands –"
-        c.drawRoundRect(RectF(8 * dp, height - 150 * dp, w - 8 * dp, height - 112 * dp), 10 * dp, 10 * dp, pill)
-        c.drawText("$state   $hands   $status", 16 * dp, height - 126 * dp, mono)
+        val m = 16 * dp
+        var y = insetTop + 12 * dp
+        y = drawChips(c, m, y, now) + 10 * dp
+        y = drawCaption(c, m, y, now)
+        drawTranscript(c, y + 14 * dp)
+        drawBottom(c, m)
+        if (signing || now - shownAtMs in 0..4200) postInvalidateOnAnimation()
     }
+
+    // --- status chips ---------------------------------------------------------------
+
+    private fun chip(c: Canvas, x: Float, y: Float, text: String, dots: List<Pair<Int, Boolean>>): Float {
+        val h = 30 * dp; val r = 4 * dp; val gap = 11 * dp
+        val w = 12 * dp + dots.size * gap + 4 * dp + chipText.measureText(text) + 12 * dp
+        fill.color = cScrim; fill.style = Paint.Style.FILL
+        c.drawRoundRect(RectF(x, y, x + w, y + h), h / 2, h / 2, fill)
+        var cx = x + 12 * dp + r
+        for ((color, on) in dots) {
+            fill.color = color
+            fill.style = if (on) Paint.Style.FILL else Paint.Style.STROKE
+            fill.strokeWidth = 1.5f * dp
+            c.drawCircle(cx, y + h / 2, r, fill)
+            cx += gap
+        }
+        fill.style = Paint.Style.FILL
+        c.drawText(text, cx - r + 4 * dp, y + h / 2 - (chipText.ascent() + chipText.descent()) / 2, chipText)
+        return x + w
+    }
+
+    private fun drawChips(c: Canvas, m: Float, y: Float, now: Long): Float {
+        // the signing dot breathes, so you can tell the app is following you
+        val pulse = if (signing && !reduceMotion) (0.55f + 0.45f * kotlin.math.sin(now / 160.0).toFloat()) else 1f
+        val dot = if (signing) Color.argb((255 * pulse).toInt(), Color.red(cSure), Color.green(cSure), Color.blue(cSure)) else cDim
+        val x = chip(c, m, y, if (signing) "Signing" else "Listening", listOf(dot to signing))
+        val hands = when {
+            leftHand && rightHand -> "Both hands"
+            leftHand || rightHand -> "One hand"
+            else -> "No hands"
+        }
+        // left dot = blue skeleton, right dot = orange skeleton
+        chip(c, x + 8 * dp, y, hands, listOf(cLeft to leftHand, cRight to rightHand))
+        return y + 30 * dp
+    }
+
+    // --- caption --------------------------------------------------------------------
+
+    private fun drawCaption(c: Canvas, m: Float, top: Float, now: Long): Float {
+        val age = (now - shownAtMs).let { if (it < 0) 1000 else it }  // future = pinned (demo)
+        if (word.isEmpty() || age >= 4000) return top
+        // enter: 180 ms rise and fade in; leave: fade over the last 600 ms
+        val enter = if (reduceMotion) 1f else (age / 180f).coerceIn(0f, 1f)
+        val ease = 1 - (1 - enter) * (1 - enter) * (1 - enter)
+        val leave = if (age > 3400) 1 - (age - 3400) / 600f else 1f
+        val a = (ease * leave).coerceIn(0f, 1f)
+        val sure = confidence >= 0.6f
+        val accent = if (sure) cSure else cMaybe
+
+        val w = width - 2 * m
+        val pad = 20 * dp
+        val alt = if (!sure && alternatives.isNotEmpty()) "or " + alternatives.joinToString(", ") { it.lowercase() } else ""
+        val h = pad + 52 * sp + 14 * dp + 6 * dp + (if (alt.isNotEmpty()) 26 * sp else 0f) + pad
+        val dy = (1 - ease) * 10 * dp
+        c.save(); c.translate(0f, dy)
+        fill.color = cScrim; fill.alpha = (Color.alpha(cScrim) * a).toInt()
+        c.drawRoundRect(RectF(m, top, m + w, top + h), 24 * dp, 24 * dp, fill)
+
+        val shown = word.lowercase()
+        wordPaint.alpha = (255 * a).toInt()
+        // shrink long words to fit one line
+        wordPaint.textSize = 46 * sp
+        val maxW = w - 2 * pad - 60 * dp
+        if (wordPaint.measureText(shown) > maxW) wordPaint.textSize *= maxW / wordPaint.measureText(shown)
+        val base = top + pad + 42 * sp
+        c.drawText(shown, m + pad, base, wordPaint)
+        body.color = accent; body.alpha = (255 * a).toInt(); body.typeface = bold
+        val pct = "${(confidence * 100).toInt()}%"
+        c.drawText(pct, m + w - pad - body.measureText(pct), base, body)
+
+        // confidence meter
+        val my = top + pad + 52 * sp + 14 * dp
+        fill.color = cPaper; fill.alpha = (40 * a).toInt()
+        c.drawRoundRect(RectF(m + pad, my, m + w - pad, my + 6 * dp), 3 * dp, 3 * dp, fill)
+        fill.color = accent; fill.alpha = (255 * a).toInt()
+        val fw = (w - 2 * pad) * (confidence.coerceIn(0f, 1f) * ease)
+        c.drawRoundRect(RectF(m + pad, my, m + pad + fw, my + 6 * dp), 3 * dp, 3 * dp, fill)
+        fill.alpha = 255
+
+        if (alt.isNotEmpty()) {
+            body.color = cDim; body.alpha = (Color.alpha(cDim) * a).toInt(); body.typeface = regular
+            c.drawText(alt, m + pad, my + 6 * dp + 22 * sp, body)
+        }
+        body.typeface = regular; body.color = cPaper
+        c.restore()
+        return top + h
+    }
+
+    private fun drawTranscript(c: Canvas, y: Float) {
+        if (transcript.isEmpty()) return
+        // newest word brightest, older ones fade back
+        val words = transcript.map { it.lowercase() }
+        val gap = body.measureText("  ")
+        val total = words.sumOf { body.measureText(it).toDouble() }.toFloat() + gap * (words.size - 1)
+        var x = (width - total) / 2
+        val h = 32 * dp
+        fill.color = col(R.color.scrim_soft)
+        c.drawRoundRect(RectF(x - 14 * dp, y, x + total + 14 * dp, y + h), h / 2, h / 2, fill)
+        words.forEachIndexed { i, w ->
+            body.color = cPaper
+            body.alpha = (255 * (0.35f + 0.65f * (i + 1) / words.size)).toInt()
+            c.drawText(w, x, y + h / 2 - (body.ascent() + body.descent()) / 2, body)
+            x += body.measureText(w) + gap
+        }
+        body.alpha = 255
+    }
+
+    // --- hints and stats above the button bar ------------------------------------------
+
+    private fun drawBottom(c: Canvas, m: Float) {
+        var bottom = (if (barTop > 0) barTop else height.toFloat()) - 12 * dp
+        val lines = mutableListOf<Pair<String, Int>>()
+        if (showPerf && perf.isNotEmpty()) lines += perf to cDim
+        if (status.isNotEmpty()) lines += status to cPaper
+        for ((text, color) in lines.asReversed()) {
+            body.color = color; body.textSize = 13 * sp
+            val w = body.measureText(text) + 24 * dp; val h = 28 * dp
+            fill.color = cScrim
+            c.drawRoundRect(RectF(m, bottom - h, m + w, bottom), h / 2, h / 2, fill)
+            c.drawText(text, m + 12 * dp, bottom - h / 2 - (body.ascent() + body.descent()) / 2, body)
+            bottom -= h + 8 * dp
+        }
+        body.textSize = 15 * sp; body.color = cPaper
+
+        val hint = when {
+            tooDark -> "Too dark. Turn on a light or face a window."
+            tooClose -> "Move the phone back so both hands fit in the picture."
+            else -> null
+        } ?: return
+        val pad = 16 * dp; val w = (width - 2 * m).toInt()
+        val layout = StaticLayout.Builder.obtain(hint, 0, hint.length, body, w - (2 * pad + 6 * dp).toInt())
+            .setAlignment(TextLayout.Alignment.ALIGN_NORMAL).build()
+        val h = layout.height + 2 * pad
+        val top = bottom - h
+        fill.color = cScrim
+        c.drawRoundRect(RectF(m, top, m + w, bottom), 18 * dp, 18 * dp, fill)
+        fill.color = cMaybe
+        c.drawRoundRect(RectF(m + 10 * dp, top + 12 * dp, m + 14 * dp, bottom - 12 * dp), 2 * dp, 2 * dp, fill)
+        c.save(); c.translate(m + pad + 6 * dp, top + pad); layout.draw(c); c.restore()
+    }
+
+    // --- skeleton -------------------------------------------------------------------
 
     private fun drawSkeleton(c: Canvas) {
         val f = frame ?: return
@@ -100,12 +237,15 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
             return vx to (y * imgH * s + oy)
         }
         fun line(a: Int, b: Int) { val p = px(a) ?: return; val q = px(b) ?: return; c.drawLine(p.first, p.second, q.first, q.second, bone) }
+        bone.color = Color.argb(150, 247, 248, 250); bone.strokeWidth = 2.5f * dp
         for ((a, b) in listOf(11 to 12, 11 to 13, 13 to 15, 12 to 14, 14 to 16)) line(a, b)
         val handBones = listOf(0 to 1, 1 to 2, 2 to 3, 3 to 4, 0 to 5, 5 to 6, 6 to 7, 7 to 8, 5 to 9, 9 to 10, 10 to 11, 11 to 12,
             9 to 13, 13 to 14, 14 to 15, 15 to 16, 13 to 17, 17 to 18, 18 to 19, 19 to 20, 0 to 17)
-        for (block in intArrayOf(Layout.LHAND, Layout.RHAND)) {
+        for ((block, color) in listOf(Layout.LHAND to cLeft, Layout.RHAND to cRight)) {
+            bone.color = color; bone.strokeWidth = 2.5f * dp
             for ((a, b) in handBones) line(block + a, block + b)
-            for (i in 0 until 21) px(block + i)?.let { c.drawCircle(it.first, it.second, 3 * dp, joint) }
+            fill.color = cPaper
+            for (i in 0 until 21) px(block + i)?.let { c.drawCircle(it.first, it.second, 2.5f * dp, fill) }
         }
     }
 }

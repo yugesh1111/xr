@@ -34,14 +34,16 @@ What you see on screen:
 
 | On screen | Meaning |
 |---|---|
-| Word in **green** | sure (60% or more) |
-| Word in **amber** + "or: ..." | fairly sure; the two next guesses are listed |
+| Word with a **mint** bar under it | sure (60% or more); the bar shows how sure |
+| Word with a **marigold** bar + "or ..." | fairly sure; the next two guesses are listed |
 | Nothing | not sure enough to show a word - sign it again |
-| `○ listening` / `● signing` | waiting / sign in progress |
-| `hands ✓` / `hands –` | hands found / not found |
-| "Move the phone back a little..." | too close, hands out of view |
+| `Listening` / `Signing` (top left) | waiting / sign in progress (the dot pulses) |
+| `Both hands` / `One hand` / `No hands` | which hands it can see; the blue and orange dots match the hand outlines drawn on screen |
+| "Move the phone back..." (above the buttons) | too close, hands out of view |
 | "Too dark..." | add light |
-| Line of words under the caption | the last few words recognised |
+| Line of words under the caption | the last few words recognised, newest brightest |
+
+![The app showing a sure word (left) and an unsure one with a hint (right)](media/app_ui.png)
 
 It knows **100 words** (WLASL100): accident, africa, all, apple, basketball,
 bed, before, bird, birthday, black, blue, book, bowling, brown, but, can,
@@ -60,15 +62,15 @@ white, who, woman, work, wrong, year, yes.
 |---|---|
 | **Flip** | front / back camera |
 | **Recognise** | give a word now for what you just signed (if it didn't show one by itself) |
-| **Voice off / on** | speak each word aloud (offline voice) |
-| **Bench** | start / stop a measurement run (see 6) |
+| **Voice** | speak each word aloud (offline voice); the speaker icon shows on or off |
+| **Bench** | start a measurement run (see 6); the button turns into **Stop** |
 | **Test** | run test videos instead of the camera (see 5) |
 
 ## 5. Check it works (no signer needed)
 
 **Test -> Built-in WLASL test clips.** Runs 10 test videos through the same
-pipeline. You get a list: true word -> app's word (confidence), the answer
-of the computer version, and timing. Expected: 9 of 10 correct, all the same
+pipeline. You get a list: each clip with the app's word and confidence, whether
+the computer version agrees, and timing. Expected: 9 of 10 correct, all the same
 as the computer.
 
 **Test -> Pick a video...** runs any video on the phone (one word per clip).
@@ -76,8 +78,8 @@ as the computer.
 ## 6. Measure speed, power and heat (for results.csv)
 
 1. Charge the phone, then **unplug it** (power is read from the battery).
-2. Tap **Bench**, then sign words continuously for **10 minutes**.
-3. Tap **Stop bench**. A summary appears and a file is saved to
+2. Tap **Bench** (speed numbers appear above the buttons), then sign words continuously for **10 minutes**.
+3. Tap **Stop**. A summary appears and a file is saved to
    `Android/data/com.echogesture.app/files/bench_<time>/results_device.csv`.
 4. Copy that file to the computer (USB file transfer, or
    `adb pull /sdcard/Android/data/com.echogesture.app/files/`) into `results/`, then:

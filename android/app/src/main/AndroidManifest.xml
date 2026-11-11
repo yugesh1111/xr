@@ -10,7 +10,9 @@
     <application
         android:allowBackup="false"
         android:label="EchoGesture"
-        android:theme="@style/Theme.AppCompat.NoActionBar">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.EchoGesture">
         <activity
             android:name=".MainActivity"
             android:exported="true"
