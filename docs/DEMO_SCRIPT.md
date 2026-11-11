@@ -8,7 +8,7 @@ The judges score: accuracy (35%), edge latency (20%), model size/quantization
 1. Start the emulator **from your own Terminal** so macOS can ask for the camera:
 
    ```bash
-   /opt/homebrew/share/android-commandlinetools/emulator/emulator -avd twofold_phone -no-snapshot-load
+   /opt/homebrew/share/android-commandlinetools/emulator/emulator -avd twofold_phone -no-snapshot-load -gpu host
    ```
 
    Click **Allow** when macOS asks for camera access. The emulator's front
@@ -23,7 +23,9 @@ The judges score: accuracy (35%), edge latency (20%), model size/quantization
 5. Practise each word a few times first and check it shows up. Look up the
    WLASL form of each sign (the model learned those variants).
 
-The emulator runs at about 5-8 frames per second on a laptop, so sign a little
+Give the emulator 8 cores, 4 GB and the host GPU (Device Manager -> Edit ->
+Advanced; already set on this Mac): it then runs at about 11 frames per second
+instead of 5. Leave audio on so Voice can be heard. The emulator is still slower than a phone, so sign a little
 slower than normal and drop your hands between words. Speed and power numbers
 in the video come from the phone run (Bench), not the emulator.
 

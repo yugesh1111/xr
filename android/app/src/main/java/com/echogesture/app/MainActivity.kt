@@ -65,6 +65,8 @@ class MainActivity : AppCompatActivity() {
     private var brightChecks = 0
     private var speak = false
     private var tts: TextToSpeech? = null
+    @Volatile private var ttsReady = false
+    private var ttsProblem: String? = null
     private val sentence = com.echogesture.core.Sentence()
     private var frameIndex = 0L
     private var lastHandMs = 0L
@@ -103,7 +105,8 @@ class MainActivity : AppCompatActivity() {
             val b = it as Button
             b.setCompoundDrawablesRelativeWithIntrinsicBounds(0, if (speak) R.drawable.ic_voice_on else R.drawable.ic_voice_off, 0, 0)
             b.contentDescription = "Speak words aloud: " + if (speak) "on" else "off"
-            Toast.makeText(this, if (speak) "Voice on" else "Voice off", Toast.LENGTH_SHORT).show()
+            if (speak && !ttsReady) Toast.makeText(this, ttsProblem ?: "Voice is still starting, try again in a second", Toast.LENGTH_LONG).show()
+            else { if (speak) say("Voice on") else Toast.makeText(this, "Voice off", Toast.LENGTH_SHORT).show() }
         }
         findViewById<Button>(R.id.bench).setOnClickListener { toggleBench(it as Button) }
         testButton = findViewById(R.id.test)
@@ -125,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             sentence.clear(); hud.sentences = emptyList(); hud.forming = null; hud.invalidate()
             Toast.makeText(this, "Sentence cleared", Toast.LENGTH_SHORT).show()
         }
-        tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts?.language = Locale.US }
+        tts = TextToSpeech(this) { status -> runOnUiThread { setUpVoice(status) } }
 
         worker.execute {
             // try the GPU first, fall back to CPU if this phone's GPU delegate fails
@@ -187,9 +190,9 @@ class MainActivity : AppCompatActivity() {
             if (testing) return
             frameIndex++
             val now = SystemClock.uptimeMillis()
-            // power saving: when nobody has signed for 2 s, look at every 3rd frame only
+            // power saving: when nobody has signed for 2 s, look at every 2nd frame only
             val idle = segmenter.state == Segmenter.State.IDLE && now - lastHandMs > 2000
-            if (idle && frameIndex % 3 != 0L) return
+            if (idle && frameIndex % 2 != 0L) return
             val bmp = rotate(image.toBitmap(), image.imageInfo.rotationDegrees)
             if (frameIndex % 15 == 0L) checkLight(meanLuma(bmp))
             val t0 = SystemClock.elapsedRealtimeNanos()
@@ -291,11 +294,36 @@ class MainActivity : AppCompatActivity() {
             if (sure) {
                 sentence.add(r.words[0], SystemClock.uptimeMillis())
                 hud.sentences = sentence.finished(); hud.forming = sentence.forming()
-                if (speak) tts?.speak(r.words[0].lowercase(), TextToSpeech.QUEUE_ADD, null, "w")
+                if (speak) say(r.words[0].lowercase())
             }
             hud.perf += ", model ${"%.1f".format(r.modelMs)} ms"
             hud.invalidate()
         }
+    }
+
+    /** The app has no internet, so the voice must be an installed (offline) one.
+     *  Engines often default to a network voice, which then fails silently. */
+    private fun setUpVoice(status: Int) {
+        val t = tts ?: return
+        if (status != TextToSpeech.SUCCESS) { ttsProblem = "No text-to-speech engine on this phone"; return }
+        val offline = runCatching { t.voices }.getOrNull().orEmpty()
+            .filter { it.locale.language == "en" && !it.isNetworkConnectionRequired &&
+                it.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) != true }
+            .sortedWith(compareBy({ it.locale.country != "US" }, { -it.quality }))
+        if (offline.isNotEmpty()) t.voice = offline.first() else t.language = Locale.US
+        if (offline.isEmpty() && t.isLanguageAvailable(Locale.US) < TextToSpeech.LANG_AVAILABLE) {
+            ttsProblem = "No offline English voice. Install one in Settings > Text-to-speech > Install voice data."
+            return
+        }
+        t.setAudioAttributes(android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build())
+        ttsReady = true
+    }
+
+    private fun say(text: String) {
+        if (!ttsReady) return
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "w${SystemClock.uptimeMillis()}")
     }
 
     private fun runTest(job: (VideoTester) -> List<VideoTester.Row>) {

@@ -13,7 +13,7 @@ package com.echogesture.core
  * holding still for half a second in between, without dropping your hands.
  */
 class Segmenter(
-    private val startFrames: Int = 3,
+    private val startFrames: Int = 2,
     private val endMissingMs: Long = 500,
     private val endStillMs: Long = 500,
     private val stillSpeed: Double = 0.1,    // image heights per second (0.004 per frame at 25 fps)
