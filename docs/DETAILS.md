@@ -990,6 +990,30 @@ What was done, in order, and why (2026).
   mean 71.1% (was 71.3%). `main.py` on official test: 83/100 (was 84).
 - results.csv: accuracy 71.07 PASS, size 4.65 PASS, robustness 4.87 PASS.
 
+**11 Nov (evening) - sign gate, sentence test, occlusion, submission bundle**
+- Sign gate (`scripts/train_gate.py`): EchoNet with 88k parameters, 0.23 MB
+  INT8, same 32 x 239 input, trained sign vs not-a-sign. Negatives: the
+  stretches before/after the sign inside WLASL clips, synthetic fidgets from
+  real poses, Kaggle ASL signs outside the 100 words. Threshold lets 90% of
+  held-out WLASL signs through (INT8: rest 25%, fidget 18%, other signs 83%
+  pass the gate alone; together with the caption rule a non-sign shows a word
+  about 5-7% of the time instead of 33-45%). Longer training (45 epochs) was
+  slightly worse than 15. The gate is used by the app only; `predict()` is
+  unchanged. live_sim: correct caption 65.7 -> 62.7%.
+- Sign detection thresholds lowered to 0.2 / 0.25 face heights (HELP, NO were
+  still rejected): sign found 91.5 -> 95.0%, idle streams still 0 of 600.
+- Sentence test in the app (Test menu): 4 three-word sentences, first test
+  clip of each word, cut to the WLASL frame range (`cut_sentence_clips.py`;
+  some source videos are long compilations), fresh tracker per clip, live
+  segmenter + caption rule + sentence builder: 9 of 12 words, 0 wrong.
+- Robustness: video-level occlusion added (a bar passing in front of the
+  signer every 2 s): 80.1 -> 76.1%. Mean drop over 5 conditions 4.64.
+- Reply captions (on-device SpeechRecognizer), Conversation view, product name
+  Palmcast, camera choice remembered, live sharpness check every 5th frame
+  (emulator 11 -> 15 fps).
+- `scripts/make_submission.py` builds `<team>.zip` in the slides' layout;
+  unzipped and run on Python 3.11 with identical predictions.
+
 **11 Nov - live path fixes, app redesign**
 - Live signing was weaker than the offline numbers. `scripts/live_sim.py`
   streams the test clips through a Python port of the app's Segmenter and

@@ -165,9 +165,11 @@ def load(root, ids):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="runs/gate")
-    ap.add_argument("--epochs", type=int, default=40)
+    ap.add_argument("--epochs", type=int, default=15)
+    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--kaggle", type=int, default=5000, help="Kaggle clips per side (train)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--keep", type=float, default=0.90, help="share of held-out WLASL signs the threshold lets through")
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
     torch.manual_seed(args.seed)
@@ -205,24 +207,28 @@ def main():
     model.sigma.copy_(flat.std(0).clamp_min(1e-3))
     print("gate parameters:", sum(p.numel() for p in model.parameters()), flush=True)
 
+    dev = torch.device(args.device)
+    model.to(dev)
+    X, y = X.to(dev), y.to(dev)
+    B = 256
     opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.05)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=args.epochs * (len(X) // 128 + 1))
-    w = torch.tensor([1.0, len(Xn) / len(Xp)])
+    sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=args.epochs * (len(X) // B + 1))
+    w = torch.tensor([1.0, len(Xn) / len(Xp)], device=dev)
     for ep in range(args.epochs):
         model.train()
-        perm = torch.randperm(len(X))
+        perm = torch.randperm(len(X), device=dev)
         tot = 0.0
-        for i in range(0, len(X), 128):
-            b = perm[i:i + 128]
+        for i in range(0, len(X), B):
+            b = perm[i:i + B]
             loss = nn.functional.cross_entropy(model(X[b]), y[b], weight=w, label_smoothing=0.05)
             opt.zero_grad()
             loss.backward()
             opt.step()
             sched.step()
             tot += loss.item() * len(b)
-        if ep % 5 == 4 or ep == args.epochs - 1:
-            print(f"ep {ep + 1} loss {tot / len(X):.3f}", flush=True)
-    model.eval()
+        print(f"ep {ep + 1} loss {tot / len(X):.3f}", flush=True)
+    model.eval().cpu()
+    X = X.cpu()
 
     def p_sign(clips):
         with torch.no_grad():
@@ -230,9 +236,9 @@ def main():
 
     sets = {"signs (WLASL val+test)": p_sign(te_pos), "signs (Kaggle, same words)": p_sign(te_kpos),
             "rest": p_sign(te_rest), "fidget": p_sign(te_fid), "other signs (Kaggle)": p_sign(te_other)}
-    # threshold: keep 97% of held-out WLASL signs
-    thr = float(np.quantile(sets["signs (WLASL val+test)"], 0.03))
-    report = {"threshold": round(thr, 3), "params": int(sum(p.numel() for p in model.parameters()))}
+    # threshold: lets --keep of the held-out WLASL signs through
+    thr = float(np.quantile(sets["signs (WLASL val+test)"], 1 - args.keep))
+    report = {"threshold": round(thr, 6), "params": int(sum(p.numel() for p in model.parameters()))}
     for name, p in sets.items():
         acc = float((p >= thr).mean())
         report[name] = {"n": int(len(p)), "passed": round(acc, 4)}
@@ -253,7 +259,7 @@ def main():
         def get_next(self):
             return next(self.it, None)
 
-    quant_pre_process(str(out / "gate_fp32.onnx"), str(out / "gate_pre.onnx"))
+    quant_pre_process(str(out / "gate_fp32.onnx"), str(out / "gate_pre.onnx"), skip_symbolic_shape=True)
     quantize_static(str(out / "gate_pre.onnx"), str(out / "gate_int8.onnx"), Reader(), quant_format=QuantFormat.QDQ,
                     per_channel=True, activation_type=QuantType.QInt8, weight_type=QuantType.QInt8)
     import onnxruntime as ort
@@ -268,7 +274,7 @@ def main():
                       [("signs (WLASL val+test)", te_pos), ("rest", te_rest), ("fidget", te_fid), ("other signs (Kaggle)", te_other)]}
     report["size_mb"] = round((out / "gate_int8.onnx").stat().st_size / 1e6, 3)
     print("INT8:", report["int8"], "size", report["size_mb"], "MB", flush=True)
-    (out / "gate_meta.json").write_text(json.dumps({"threshold": round(thr, 3), "length": LEN, "mode": "canonical"}, indent=1))
+    (out / "gate_meta.json").write_text(json.dumps({"threshold": round(thr, 6), "length": LEN, "mode": "canonical"}, indent=1))
     (out / "report.json").write_text(json.dumps(report, indent=1))
 
 

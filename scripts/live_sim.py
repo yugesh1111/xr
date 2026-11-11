@@ -113,6 +113,7 @@ def main():
     ap.add_argument("--every", type=int, default=2, help="keep every n-th frame (WLASL is ~25 fps)")
     ap.add_argument("--old", action="store_true")
     ap.add_argument("--models", default="models")
+    ap.add_argument("--no-gate", action="store_true", help="ignore models/gate_int8.onnx")
     ap.add_argument("--seg", default="{}", help="JSON overrides for the Segmenter, for tuning")
     ap.add_argument("--sentences", type=int, default=0, help="also test N three-sign sequences without dropping the hands")
     args = ap.parse_args()
@@ -121,8 +122,20 @@ def main():
     meta = json.loads((Path(args.models) / "model_meta.json").read_text())
     sess = ort.InferenceSession(str(Path(args.models) / "model_int8.onnx"), providers=["CPUExecutionProvider"])
 
+    # sign gate (scripts/train_gate.py), as in the app: no word at all when it says "not a sign"
+    gate_path = Path(args.models) / "gate_int8.onnx"
+    gate = thr = None
+    if gate_path.exists() and not args.no_gate and not args.old:
+        gate = ort.InferenceSession(str(gate_path), providers=["CPUExecutionProvider"])
+        thr = json.loads((Path(args.models) / "gate_meta.json").read_text())["threshold"]
+
     def probs(x):
-        z = sess.run(None, {"x": make_input(x, meta["mode"], meta["length"])[None].astype(np.float32)})[0][0]
+        f = make_input(x, meta["mode"], meta["length"])[None].astype(np.float32)
+        if gate is not None:
+            g = gate.run(None, {"x": f})[0][0]
+            if 1 / (1 + np.exp(g[0] - g[1])) < thr:
+                return np.full(len(meta["vocab"]), 1.0 / len(meta["vocab"]))  # nothing passes the caption rule
+        z = sess.run(None, {"x": f})[0][0]
         p = np.exp(z - z.max())
         return p / p.sum()
 

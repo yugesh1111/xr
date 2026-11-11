@@ -39,7 +39,7 @@ What you see on screen:
 | Word with a **mint** bar under it | sure (60% or more); the bar shows how sure |
 | Word with a **marigold** bar + "or ..." | fairly sure; the next two guesses are listed |
 | Grey **word?** + "or ..." | a guess: one of these three is usually right; not added to the history or spoken |
-| Nothing | no sign found, or no real candidate - sign it again, a bit bigger |
+| Nothing | no sign found, the movement didn't look like a sign, or no real candidate - sign it again, a bit bigger |
 | `Listening` / `Signing` (top left) | waiting / sign in progress (the dot pulses) |
 | `Both hands` / `One hand` / `No hands` | which hands it can see; the blue and orange dots match the hand outlines drawn on screen |
 | "Move the phone back..." (above the buttons) | too close, hands out of view |
@@ -76,6 +76,10 @@ videos through the same pipeline (under a minute on a phone; progress shows
 above the buttons). You get a list: each clip with the app's word and confidence, whether
 the computer version agrees, and timing. Expected: 9 of 10 correct, all the same
 as the computer.
+
+**Test -> Sentence test.** Plays four 3-word sentences made of WLASL test clips
+through the live pipeline, with the video and hand outlines on screen, and
+shows the sentence forming. Expected: 9 of 12 words.
 
 **Test -> Pick a video...** runs any video on the phone (one word per clip).
 

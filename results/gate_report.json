@@ -1,0 +1,31 @@
+{
+ "threshold": 0.03108,
+ "params": 87973,
+ "signs (WLASL val+test)": {
+  "n": 844,
+  "passed": 0.9005
+ },
+ "signs (Kaggle, same words)": {
+  "n": 797,
+  "passed": 0.9724
+ },
+ "rest": {
+  "n": 180,
+  "passed": 0.1944
+ },
+ "fidget": {
+  "n": 1266,
+  "passed": 0.1382
+ },
+ "other signs (Kaggle)": {
+  "n": 1496,
+  "passed": 0.8182
+ },
+ "int8": {
+  "signs (WLASL val+test)": 0.904,
+  "rest": 0.25,
+  "fidget": 0.184,
+  "other signs (Kaggle)": 0.8269
+ },
+ "size_mb": 0.231
+}
