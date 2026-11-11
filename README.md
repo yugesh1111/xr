@@ -13,7 +13,7 @@ Language Prediction on Edge Device"**.
 |---|---|
 | **Android app (APK)** | [EchoGesture-arm64.apk](https://github.com/Amritha902/xr/releases/latest/download/EchoGesture-arm64.apk) - any 64-bit Android phone, Android 8+ |
 | **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
-| **Demo video** | _coming soon (recording on a Galaxy A36)_ |
+| **Demo video** | _coming soon_ - plan in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
 | **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
 
 ## Why
