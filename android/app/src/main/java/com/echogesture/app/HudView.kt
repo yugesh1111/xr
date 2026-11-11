@@ -27,6 +27,7 @@ import com.echogesture.core.Layout
  */
 class HudView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     var word = ""; var confidence = 0f; var alternatives: List<String> = emptyList()
+    var guess = false     // below the confidence gate: grey "word?" plus the next guesses
     var shownAtMs = 0L  // the caption fades out 4 s after it was set
     var tooClose = false  // face fills too much of the frame: hands are mostly out of view
     var tooDark = false   // picture too dark for reliable hand tracking
@@ -127,8 +128,8 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
         val ease = 1 - (1 - enter) * (1 - enter) * (1 - enter)
         val leave = if (age > 3400) 1 - (age - 3400) / 600f else 1f
         val a = (ease * leave).coerceIn(0f, 1f)
-        val sure = confidence >= 0.6f
-        val accent = if (sure) cSure else cMaybe
+        val sure = confidence >= 0.6f && !guess
+        val accent = if (guess) cDim else if (sure) cSure else cMaybe
 
         val w = width - 2 * m
         val pad = 20 * dp
@@ -139,8 +140,9 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
         fill.color = cScrim; fill.alpha = (Color.alpha(cScrim) * a).toInt()
         c.drawRoundRect(RectF(m, top, m + w, top + h), 24 * dp, 24 * dp, fill)
 
-        val shown = word.lowercase()
-        wordPaint.alpha = (255 * a).toInt()
+        val shown = word.lowercase() + if (guess) "?" else ""
+        wordPaint.color = if (guess) cDim else cPaper
+        wordPaint.alpha = (Color.alpha(wordPaint.color) * a).toInt()
         // shrink long words to fit one line
         wordPaint.textSize = 46 * sp
         val maxW = w - 2 * pad - 60 * dp

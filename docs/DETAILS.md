@@ -470,7 +470,8 @@ emulator has to run on a laptop:
 
 1. Android Studio -> Device Manager -> create a phone (e.g. Pixel 8) with an
    **x86_64** system image, API 34 or 35.
-2. Edit the device -> Show Advanced Settings -> Camera -> Back: **Webcam0**
+2. Edit the device -> Show Advanced Settings -> Camera -> Front: **Webcam0**, Back: **Emulated**
+   (the emulator can give the webcam to only one of its cameras)
    (your laptop webcam becomes the phone camera).
 3. Start it and drag `app-x86_64-release.apk` onto the emulator window.
 4. Use **Test -> Built-in WLASL test clips**, or sign in front of the webcam.
@@ -986,6 +987,25 @@ What was done, in order, and why (2026).
 - Re-ran the held-out signers through the new pipeline: 75.9 / 66.7 / 70.7,
   mean 71.1% (was 71.3%). `main.py` on official test: 83/100 (was 84).
 - results.csv: accuracy 71.07 PASS, size 4.65 PASS, robustness 4.87 PASS.
+
+**11 Nov - live path fixes, app redesign**
+- Live signing was weaker than the offline numbers. `scripts/live_sim.py`
+  streams the test clips through a Python port of the app's Segmenter and
+  caption rule. Frame rate was not the cause (top-1 79-83% from 25 down to
+  4 fps). The sign detector was: it needed 0.8 face-heights of wrist travel,
+  which signs made in one place (MOTHER, COLOR, CANDY, SHIRT, NO) never reach,
+  so 27% of real signs were thrown away; and summed travel let tracker jitter
+  on resting hands through (49 junk words in 600 idle streams).
+- New rule: 5-95% range of the wrist (>= 0.3 face heights) or of a fingertip
+  relative to the wrist (>= 0.4). Resting hands stay below 0.12 / 0.17.
+  At ~12 fps: sign found 72.6 -> 91.5%, correct caption on screen
+  50.7 -> 61.7% (right when shown 95%), idle junk 49 -> 0 / 600.
+  `SegmenterTest` covers still hands, arm movement and finger-only signs.
+- Guess tier: top probability >= 0.25 but below the caption gate is shown as a
+  grey "word?" with two alternatives (20% of signs; right word among the three
+  85% of the time). Not spoken, not added to the transcript.
+- Front camera by default. New HUD (caption card, confidence meter, status
+  chips, icon bar, Atkinson Hyperlegible).
 
 **10 Nov - live recognition, near/far, Kaggle pre-training** (this laptop)
 - App fixes: launch crash, junk captions removed (confidence + margin gate,

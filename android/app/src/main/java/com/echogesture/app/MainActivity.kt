@@ -38,6 +38,10 @@ import java.util.concurrent.Executors
 
 private const val SHOW_MIN_PROB = 0.45f
 private const val SHOW_MIN_MARGIN = 0.20f
+// below the gate but still a real candidate: shown as a grey "word?" with the next two
+// guesses, not added to the transcript or spoken. On held-out clips 20% of signs land
+// here and the right word is among the three shown 85% of the time.
+private const val GUESS_MIN_PROB = 0.25f
 // when the face is this big in the frame, most signs happen below the image edge
 // (hands visible in 15% of frames at 0.5 vs 55% normally): ask the user to move back
 private const val TOO_CLOSE_FACE_SHARE = 0.40f
@@ -54,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     private val segmenter = Segmenter()
     private var stats = Stats(this)
     private var benchRunning = false
-    private var backCamera = true
+    private var backCamera = false  // front: you sign to your own phone; Flip to caption someone else
     private var camera: Camera? = null
     private var lightOn = false        // ring light (front) or torch (back) switched on for low light
     private var darkChecks = 0
@@ -109,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         // screenshot helper: adb shell am start -n com.echogesture.app/.MainActivity --es demo bird --ef conf 0.52 --ez close true
         intent.getStringExtra("demo")?.let { w ->
             hud.word = w.uppercase(); hud.confidence = intent.getFloatExtra("conf", 0.9f)
-            hud.alternatives = listOf("BOOK", "BLUE"); hud.shownAtMs = SystemClock.uptimeMillis() + 600_000
+            hud.alternatives = listOf("BOOK", "BLUE"); hud.guess = intent.getBooleanExtra("guess", false); hud.shownAtMs = SystemClock.uptimeMillis() + 600_000
             hud.transcript = listOf("MOTHER", "WANT", "DRINK", w.uppercase()); demoClose = intent.getBooleanExtra("close", false)
         }
         tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts?.language = Locale.US }
@@ -146,6 +150,17 @@ class MainActivity : AppCompatActivity() {
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
             analysis.setAnalyzer(worker) { analyze(it) }
+            // a phone (or emulator) without the requested camera: use the one it has
+            fun has(back: Boolean) = runCatching {
+                provider.hasCamera(if (back) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA)
+            }.getOrDefault(false)
+            if (!has(backCamera)) {
+                if (!has(!backCamera)) {
+                    Toast.makeText(this, "No camera found. Test mode still works.", Toast.LENGTH_LONG).show()
+                    return@addListener
+                }
+                backCamera = !backCamera
+            }
             val selector = if (backCamera) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
             hud.mirror = !backCamera
             segmenter.reset()
@@ -250,13 +265,17 @@ class MainActivity : AppCompatActivity() {
         val r = rec.recognize(frames)
         stats.inference(r.featureMs, r.modelMs)
         runOnUiThread {
-            // an unsure guess (below 35%) is not shown at all: a wrong word on screen
+            // a weak guess (below 25%) is not shown at all: a wrong word on screen
             // reads as a mistake, an empty caption reads as "still listening"
-            if (confident(r)) {
+            val sure = confident(r)
+            if (sure || r.probs[0] >= GUESS_MIN_PROB) {
                 hud.word = r.words[0]
                 hud.confidence = r.probs[0]
                 hud.alternatives = r.words.drop(1)
+                hud.guess = !sure
                 hud.shownAtMs = SystemClock.uptimeMillis()
+            }
+            if (sure) {
                 transcript.addLast(r.words[0]); while (transcript.size > 6) transcript.removeFirst()
                 hud.transcript = transcript.toList()
                 if (speak) tts?.speak(r.words[0].lowercase(), TextToSpeech.QUEUE_ADD, null, "w")
