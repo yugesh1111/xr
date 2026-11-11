@@ -1,19 +1,13 @@
 {
  "clips": 422,
  "results": {
-  "f_base+f_nf+f_deg": {
-   "clean": 0.7796,
-   "dark": 0.7204,
-   "blur": 0.6919,
-   "rotate15": 0.7773,
-   "low_res": 0.6777
-  },
   "f_base+f_nf+f_deg+f_e12p25": {
    "clean": 0.8009,
    "dark": 0.7512,
    "blur": 0.7227,
    "rotate15": 0.8104,
-   "low_res": 0.7275
+   "low_res": 0.7275,
+   "occlusion": 0.7607
   }
  }
 }

@@ -2,7 +2,7 @@
 #   docker build -t echogesture .
 #   docker run --rm --network none -v /path/to/clips:/clips -v "$PWD/results:/app/results" \
 #       echogesture --videos /clips --out results/predictions.jsonl
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 # MediaPipe needs EGL/GLES even on CPU; OpenCV needs libgl
 RUN apt-get update && apt-get install -y --no-install-recommends libegl1 libgles2 libgl1 libglib2.0-0 \

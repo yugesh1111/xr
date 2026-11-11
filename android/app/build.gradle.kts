@@ -63,15 +63,26 @@ val prepareAssets by tasks.registering {
         for (name in listOf("model_int8.onnx", "model_meta.json")) {
             modelsDir.resolve(name).copyTo(assetsDir.resolve(name), overwrite = true)
         }
+        // optional sign gate (scripts/train_gate.py)
+        for (name in listOf("gate_int8.onnx", "gate_meta.json")) {
+            val f = modelsDir.resolve(name)
+            if (f.exists()) f.copyTo(assetsDir.resolve(name), overwrite = true)
+        }
         // WLASL test clips for the in-app test mode (only if the data is on this machine;
         // the videos are not stored in git)
-        val clipList = modelsDir.resolve("test_clips.json")
-        if (clipList.exists()) {
-            clipList.copyTo(assetsDir.resolve("test_clips.json"), overwrite = true)
-            val ids = Regex("\"video_id\": \"(\\w+)\"").findAll(clipList.readText()).map { it.groupValues[1] }
-            val clipDir = assetsDir.resolve("test_clips").apply { mkdirs() }
+        // test_clips.json: single-word test (whole WLASL clips).
+        // sentence_clips.json: 3-word sentences; clips cut to the sign by scripts/cut_sentence_clips.py
+        for ((listName, srcDir, dstDir) in listOf(
+            Triple("test_clips.json", "../data/wlasl/raw", "test_clips"),
+            Triple("sentence_clips.json", "../data/wlasl/sentence_clips", "sentence_clips"))) {
+            val clipList = modelsDir.resolve(listName)
+            if (!clipList.exists()) continue
+            clipList.copyTo(assetsDir.resolve(listName), overwrite = true)
+            val ids = Regex("\"video_id\": \"(\\w+)\"").findAll(clipList.readText()).map { it.groupValues[1] }.toSet()
+            val clipDir = assetsDir.resolve(dstDir).apply { mkdirs() }
+            clipDir.listFiles()?.filter { it.nameWithoutExtension !in ids }?.forEach { it.delete() }
             for (id in ids) {
-                val src = rootProject.projectDir.resolve("../data/wlasl/raw/$id.mp4")
+                val src = rootProject.projectDir.resolve("$srcDir/$id.mp4")
                 if (src.exists()) src.copyTo(clipDir.resolve("$id.mp4"), overwrite = true)
             }
         }

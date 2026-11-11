@@ -23,9 +23,9 @@ class Segmenter(
     // fingertip moves this much relative to the wrist (in face heights, 5-95%
     // range so tracker jitter doesn't add up). Signs made in one place (MOTHER,
     // COLOR, CANDY) move the fingers, not the arm. Resting hands with jitter
-    // stay below 0.12 / 0.17; 91% of WLASL test signs pass (scripts/live_sim.py).
-    private val minWristRange: Double = 0.3,
-    private val minFingerRange: Double = 0.4,
+    // stay below 0.12 / 0.17; 95% of WLASL test signs pass (scripts/live_sim.py).
+    private val minWristRange: Double = 0.2,
+    private val minFingerRange: Double = 0.25,
     private val minFrames: Int = 5,
     private val minMs: Long = 400,
 ) {
@@ -42,6 +42,11 @@ class Segmenter(
     private var lastMs = -1L
     private var moved = false
     private var lastWrist: FloatArray? = null
+    /** Why the last segment ended (for logs and tuning). */
+    var lastEnd = ""
+        private set
+    var lastRange = ""
+        private set
     private val faceHeights = ArrayList<Double>()
 
     /** Feed one frame (88*3 floats, NaN = missing) taken at [tMs]. Returns a finished segment or null. */
@@ -74,7 +79,9 @@ class Segmenter(
                     history.clear(); seenRun = 0
                     val out = ArrayList(segment)
                     segment.clear()
-                    return if (tMs - startMs >= minMs && isSign(out)) out else null
+                    val ok = tMs - startMs >= minMs && isSign(out)
+                    lastEnd = "frames=${out.size} ms=${tMs - startMs} missing=$missingMs still=$stillMs moved=$moved accepted=$ok $lastRange"
+                    return if (ok) out else null
                 }
             }
         }
@@ -90,10 +97,13 @@ class Segmenter(
     fun isSign(frames: List<FloatArray>): Boolean {
         if (frames.size < minFrames) return false
         val fh = if (faceHeights.isEmpty()) 0.25 else faceHeights.sorted()[faceHeights.size / 2]
+        lastRange = "fh=${"%.3f".format(fh)}"
         for (b in intArrayOf(Layout.RHAND, Layout.LHAND)) {
             val seen = frames.filter { !it[b * 3].isNaN() }
             if (seen.size < 3) continue
-            if (range(seen.map { it[b * 3] }, seen.map { it[b * 3 + 1] }) / fh >= minWristRange) return true
+            val wr = range(seen.map { it[b * 3] }, seen.map { it[b * 3 + 1] }) / fh
+            lastRange += " hand$b seen=${seen.size} wrist=${"%.2f".format(wr)}"
+            if (wr >= minWristRange) return true
             for (tip in TIPS) {
                 val dx = seen.map { it[(b + tip) * 3] - it[b * 3] }
                 val dy = seen.map { it[(b + tip) * 3 + 1] - it[b * 3 + 1] }

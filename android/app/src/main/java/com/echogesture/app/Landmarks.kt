@@ -12,7 +12,13 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.holisticlandmarker.HolisticLandmarker
 
 /** Camera frame -> 88 landmarks, same layout and units as echogesture/extract.py. */
-class Landmarks(context: Context, gpu: Boolean, private val enhance: Boolean = true) : AutoCloseable {
+class Landmarks(context: Context, gpu: Boolean, private val enhance: Boolean = true,
+                /** Decide "does this picture need sharpening?" on every n-th frame and reuse the
+                 *  answer in between. 1 = every frame (test mode, identical to main.py); the live
+                 *  camera uses 5: blur changes slowly and the check reads every pixel. */
+                private val checkEvery: Int = 1) : AutoCloseable {
+    private var frameNo = 0L
+    private var sharpen = false
     private val landmarker: HolisticLandmarker
     private var lastTs = -1L
     private var pixels = IntArray(0)
@@ -61,8 +67,12 @@ class Landmarks(context: Context, gpu: Boolean, private val enhance: Boolean = t
         if (!enhance) return bitmap
         val w = bitmap.width; val h = bitmap.height
         if (pixels.size != w * h) pixels = IntArray(w * h)
+        val check = frameNo++ % checkEvery == 0L
+        if (!check && !sharpen) return bitmap  // sharp enough last time: no pixel work at all
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
-        if (!Enhance.apply(pixels, w, h)) return bitmap
+        if (check) sharpen = Enhance.needsSharpening(pixels, w, h)
+        if (!sharpen) return bitmap
+        Enhance.unsharp(pixels, w, h)
         sharpened++
         val out = if (bitmap.isMutable && bitmap.config == Bitmap.Config.ARGB_8888) bitmap
                   else bitmap.copy(Bitmap.Config.ARGB_8888, true)

@@ -28,11 +28,13 @@ TIPS = [4, 8, 12, 16, 20]
 class Segmenter:
     """Python port of android/.../core/Segmenter.kt."""
 
-    def __init__(self, old=False, start=3, end_missing_ms=500, end_still_ms=500, still_speed=0.1, max_ms=3500, pre_roll=5):
+    def __init__(self, old=False, start=2, end_missing_ms=500, end_still_ms=500, still_speed=0.1, max_ms=3500, pre_roll=5,
+                 min_wrist=0.2, min_finger=0.25):
         self.old = old
         self.start, self.end_missing_ms, self.end_still_ms = start, end_missing_ms, end_still_ms
         self.still_speed, self.max_ms, self.pre_roll = still_speed, max_ms, pre_roll  # still_speed: image heights / s
         self.min_frames = 10 if old else 5
+        self.min_wrist, self.min_finger = min_wrist, min_finger
         self.signing = False
         self.hist, self.seg, self.seen, self.last, self.last_t = [], [], 0, None, None
 
@@ -81,7 +83,7 @@ class Segmenter:
         if self.old:
             return self.moved and self.travel / fh >= 0.8
         wrist, finger = movement_ranges(x)
-        return wrist / fh >= 0.3 or finger / fh >= 0.4
+        return wrist / fh >= self.min_wrist or finger / fh >= self.min_finger
 
 
 def face_height(x):
@@ -111,6 +113,7 @@ def main():
     ap.add_argument("--every", type=int, default=2, help="keep every n-th frame (WLASL is ~25 fps)")
     ap.add_argument("--old", action="store_true")
     ap.add_argument("--models", default="models")
+    ap.add_argument("--seg", default="{}", help="JSON overrides for the Segmenter, for tuning")
     ap.add_argument("--sentences", type=int, default=0, help="also test N three-sign sequences without dropping the hands")
     args = ap.parse_args()
 
@@ -140,7 +143,7 @@ def main():
         rest[:, L.LHAND] = np.nan
         rest[:, L.RHAND] = np.nan
         stream = np.concatenate([np.repeat(rest, 10, 0), x, np.repeat(rest, 12, 0)])
-        seg = Segmenter(old=args.old)
+        seg = Segmenter(old=args.old, **json.loads(args.seg))
         dt = 40.0 * args.every
         segs = [s for s in (seg.push(f, i * dt) for i, f in enumerate(stream)) if s is not None]
         n += 1
@@ -157,7 +160,7 @@ def main():
             for noise, sway in [(0.002, 0.0), (0.004, 0.0), (0.002, 0.003)]:
                 s = f0[None] + rng.normal(0, noise, (96,) + f0.shape).astype(np.float32)
                 s[..., 0] += sway * np.sin(np.arange(96)[:, None] / 6.0)
-                seg = Segmenter(old=args.old)
+                seg = Segmenter(old=args.old, **json.loads(args.seg))
                 idle_n += 1
                 idle_words += sum(shown(probs(o)) for o in (seg.push(f, i * dt) for i, f in enumerate(s)) if o is not None)
     print(f"~{25 / args.every:.0f} fps, {'old' if args.old else 'current'} rule, {n} test signs")
@@ -196,7 +199,7 @@ def sentences(args, m, probs, shown, vocab):
         rest[:, L.LHAND] = np.nan
         rest[:, L.RHAND] = np.nan
         stream = np.concatenate([np.repeat(rest, 8, 0)] + parts + [np.repeat(rest, 20, 0)])
-        seg = Segmenter(old=args.old)
+        seg = Segmenter(old=args.old, **json.loads(args.seg))
         words = []
         for i, f in enumerate(stream):
             o = seg.push(f, i * dt)

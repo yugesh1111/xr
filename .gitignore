@@ -12,3 +12,4 @@ results/
 runs_*.log
 *.apk
 logs_holdout/
+dist/

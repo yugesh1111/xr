@@ -9,6 +9,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- dataset clip shown during the sentence test (camera is paused) -->
+    <ImageView
+        android:id="@+id/clip"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/slate"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="Test video" />
+
     <com.echogesture.app.HudView
         android:id="@+id/hud"
         android:layout_width="match_parent"

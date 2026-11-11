@@ -107,7 +107,12 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         bar.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> hud.barTop = v.top.toFloat(); hud.invalidate() }
-        findViewById<Button>(R.id.flip).setOnClickListener { backCamera = !backCamera; startCamera() }
+        // remember the camera: the app never switches by itself between launches
+        val prefs = getPreferences(MODE_PRIVATE)
+        backCamera = prefs.getBoolean("backCamera", backCamera)
+        findViewById<Button>(R.id.flip).setOnClickListener {
+            backCamera = !backCamera; prefs.edit().putBoolean("backCamera", backCamera).apply(); startCamera()
+        }
         findViewById<Button>(R.id.now).setOnClickListener { recognizeNow() }
         findViewById<Button>(R.id.speak).setOnClickListener {
             speak = !speak
@@ -123,11 +128,12 @@ class MainActivity : AppCompatActivity() {
         testButton.setOnClickListener {
             if (testing) { cancelTest = true; hud.status = "Stopping the test…"; hud.invalidate(); return@setOnClickListener }
             AlertDialog.Builder(this).setTitle("Test and measure")
-                .setItems(arrayOf("Built-in WLASL test clips", "Pick a video…",
+                .setItems(arrayOf("Built-in WLASL test clips", "Sentence test (dataset clips, live pipeline)", "Pick a video…",
                     if (benchRunning) "Stop measuring and save results" else "Measure speed, power and heat (10 min)")) { _, which ->
                     when (which) {
                         0 -> runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
-                        1 -> pickVideo.launch(arrayOf("video/*"))
+                        1 -> runSentenceTest()
+                        2 -> pickVideo.launch(arrayOf("video/*"))
                         else -> toggleBench()
                     }
                 }.show()
@@ -147,7 +153,7 @@ class MainActivity : AppCompatActivity() {
 
         worker.execute {
             // try the GPU first, fall back to CPU if this phone's GPU delegate fails
-            landmarks = runCatching { Landmarks(this, gpu = true) }.getOrElse { Landmarks(this, gpu = false) }
+            landmarks = runCatching { Landmarks(this, gpu = true, checkEvery = 5) }.getOrElse { Landmarks(this, gpu = false, checkEvery = 5) }
             recognizer = Recognizer(this, nnapi = false)
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) startCamera()
@@ -300,11 +306,14 @@ class MainActivity : AppCompatActivity() {
         val rec = recognizer ?: return
         val r = rec.recognize(frames)
         stats.inference(r.featureMs, r.modelMs)
+        android.util.Log.i("Palmcast", "segment ${frames.size} frames -> ${r.words[0]} ${"%.2f".format(r.probs[0])} / ${r.words.getOrNull(1)} ${"%.2f".format(r.probs.getOrElse(1) { 0f })} sign=${"%.2f".format(r.signProb)}")
         runOnUiThread {
             // a weak guess (below 25%) is not shown at all: a wrong word on screen
             // reads as a mistake, an empty caption reads as "still listening"
-            val sure = confident(r)
-            if (sure || r.probs[0] >= GUESS_MIN_PROB) {
+            // the sign gate first: a fidget, a hand on the chin or a sign outside the
+            // 100 words shows nothing at all, whatever word the classifier would pick
+            val sure = r.isSign && confident(r)
+            if (r.isSign && (sure || r.probs[0] >= GUESS_MIN_PROB)) {
                 hud.word = r.words[0]
                 hud.confidence = r.probs[0]
                 hud.alternatives = r.words.drop(1)
@@ -312,7 +321,8 @@ class MainActivity : AppCompatActivity() {
                 hud.shownAtMs = SystemClock.uptimeMillis()
             }
             if (sure) {
-                sentence.add(r.words[0], SystemClock.uptimeMillis())
+                sentence.add(r.words[0], if (clipClockMs >= 0) clipClockMs else SystemClock.uptimeMillis())
+                if (clipClockMs >= 0) clipWords.add(r.words[0])
                 refreshTalk()
                 if (speak) say(r.words[0].lowercase())
             }
@@ -410,6 +420,101 @@ class MainActivity : AppCompatActivity() {
         if (seg.size >= 8) show(seg) else runOnUiThread { Toast.makeText(this, "Sign first, then tap", Toast.LENGTH_SHORT).show() }
     }
 
+    // --- sentence test: dataset clips streamed through the live pipeline -----------------
+
+    @Volatile private var clipClockMs = -1L   // video time while the sentence test runs, else -1
+    private val clipWords = ArrayList<String>()
+
+    /** Plays 3-word sentences made of WLASL test clips through exactly what the camera
+     *  uses - landmarks, sign detection, caption rule, sentence builder - and shows the
+     *  video with the hand outlines while the sentence forms. Hands "drop" between clips. */
+    private fun runSentenceTest() {
+        if (landmarks == null || recognizer == null) { Toast.makeText(this, "Still loading, try again in a moment", Toast.LENGTH_SHORT).show(); return }
+        val view = findViewById<android.widget.ImageView>(R.id.clip)
+        val list = org.json.JSONArray(assets.open("sentence_clips.json").bufferedReader().readText())
+        testing = true; cancelTest = false
+        cameraProvider?.unbindAll(); setLight(false)
+        sentence.clear(); conversation.clear(); refreshTalk()
+        hud.word = ""; hud.fit = true; hud.mirror = false; view.visibility = View.VISIBLE
+        testButton.text = "Stop"
+        testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
+        worker.execute {
+            val report = StringBuilder(); var right = 0; var total = 0
+            segmenter.reset(); clipClockMs = 0
+            var lastFrame = FloatArray(Layout.N_POINTS * 3) { Float.NaN }
+            runCatching {
+                for (si in 0 until list.length()) {
+                    val words = list.getJSONArray(si)
+                    val truth = (0 until words.length()).map { words.getJSONObject(it).getString("gloss") }
+                    runOnUiThread { clipWords.clear() }
+                    for (wi in 0 until words.length()) {
+                        if (cancelTest) break
+                        val id = words.getJSONObject(wi).getString("video_id")
+                        runOnUiThread { hud.status = "Sentence ${si + 1} of ${list.length()}: clip ${wi + 1} of ${words.length()} (${truth[wi].lowercase()})"; hud.invalidate() }
+                        val r = android.media.MediaMetadataRetriever()
+                        assets.openFd("sentence_clips/$id.mp4").use { r.setDataSource(it.fileDescriptor, it.startOffset, it.length) }
+                        val n = r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)?.toInt() ?: 0
+                        val durMs = r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
+                        val dt = if (n > 0 && durMs > 0) (durMs / n).coerceIn(20L, 100L) else 40L  // real frame spacing of this clip
+                        var i = 0
+                        // a new tracker per clip: a cut to a different person is not something a
+                        // camera ever shows, and the tracker loses the hands across it
+                        val lm = Landmarks(this, gpu = false)
+                        while (i < n && !cancelTest) {
+                            val batch = r.getFramesAtIndex(i, minOf(12, n - i))
+                            for (bmp0 in batch) {
+                                val bmp = if (bmp0.config == Bitmap.Config.ARGB_8888) bmp0 else bmp0.copy(Bitmap.Config.ARGB_8888, false)
+                                val frame = lm.detect(bmp, clipClockMs + dt)
+                                clipClockMs += dt
+                                lastFrame = frame
+                                val before = segmenter.lastEnd
+                                segmenter.push(frame, clipClockMs)?.let { show(it) }
+                                if (segmenter.lastEnd !== before) android.util.Log.i("Palmcast", "clip $id: ${segmenter.lastEnd}")
+                                val l = !frame[Layout.LHAND * 3].isNaN(); val rr = !frame[Layout.RHAND * 3].isNaN()
+                                runOnUiThread {
+                                    view.setImageBitmap(bmp); hud.leftHand = l; hud.rightHand = rr
+                                    hud.signing = segmenter.state == Segmenter.State.SIGNING; hud.setFrame(frame, bmp.width, bmp.height)
+                                }
+                            }
+                            i += batch.size.coerceAtLeast(1)
+                        }
+                        r.release(); lm.close()
+                        // the signer lowers their hands between words: body still in view, hands gone
+                        val rest = lastFrame.copyOf()
+                        for (k in Layout.LHAND * 3 until (Layout.RHAND + 21) * 3) rest[k] = Float.NaN
+                        val before = segmenter.lastEnd
+                        repeat(16) { clipClockMs += 40; segmenter.push(rest, clipClockMs)?.let { show(it) } }
+                        android.util.Log.i("Palmcast", "clip $id (${truth[wi]}) end: ${if (segmenter.lastEnd !== before) segmenter.lastEnd else "no segment, state=${segmenter.state}"}")
+                    }
+                    val latch = java.util.concurrent.CountDownLatch(1)
+                    runOnUiThread {
+                        sentence.closeNow()
+                        val got = clipWords.toList()
+                        // words right and in order (longest common subsequence)
+                        val lcs = Array(truth.size + 1) { IntArray(got.size + 1) }
+                        for (a in truth.indices) for (b in got.indices)
+                            lcs[a + 1][b + 1] = if (truth[a] == got[b]) lcs[a][b] + 1 else maxOf(lcs[a][b + 1], lcs[a + 1][b])
+                        right += lcs[truth.size][got.size]; total += truth.size
+                        report.append("Signed:  ${truth.joinToString(" ") { it.lowercase() }}\nRead:    ${if (got.isEmpty()) "(nothing)" else got.joinToString(" ") { it.lowercase() }}\n\n")
+                        latch.countDown()
+                    }
+                    latch.await()
+                    if (cancelTest) break
+                }
+            }.onFailure { report.append("The test could not run: ${it.message}") }
+            clipClockMs = -1; testing = false
+            runOnUiThread {
+                hud.status = ""; hud.fit = false; view.visibility = View.GONE; view.setImageDrawable(null)
+                testButton.text = "Test"
+                testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_test, 0, 0)
+                segmenter.reset(); startCamera()
+                AlertDialog.Builder(this).setTitle("Sentence test")
+                    .setMessage("$right of $total words right and in order\n\n${report.toString().trim()}\n\nWLASL test clips the model never trained on, through the same pipeline as the camera.")
+                    .setPositiveButton("OK", null).show()
+            }
+        }
+    }
+
     private fun refreshTalk() {
         hud.turns = conversation.turns(); hud.forming = sentence.forming(); hud.invalidate()
     }
@@ -425,8 +530,8 @@ class MainActivity : AppCompatActivity() {
 
     /** On-device recognition where the phone has it (Android 12+), so the reply's
      *  audio stays on the phone like the video does. */
-    private fun startReply() {
-        val onDevice = Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+    private fun startReply(useOnDevice: Boolean = true) {
+        val onDevice = useOnDevice && Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         val sr = when {
             onDevice -> SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
             SpeechRecognizer.isRecognitionAvailable(this) -> SpeechRecognizer.createSpeechRecognizer(this)
@@ -449,6 +554,14 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onError(error: Int) {
                 done()
+                // 12/13: the offline language pack isn't on the phone yet. Ask Android to
+                // fetch it (one time) and use the phone's standard recogniser meanwhile.
+                if (onDevice && (error == 12 || error == 13)) {
+                    if (Build.VERSION.SDK_INT >= 33) runCatching { sr.triggerModelDownload(intent()) }
+                    Toast.makeText(this@MainActivity, "Offline speech pack isn't installed yet; using the phone's standard speech service for now.", Toast.LENGTH_LONG).show()
+                    if (SpeechRecognizer.isRecognitionAvailable(this@MainActivity)) startReply(useOnDevice = false)
+                    return
+                }
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Didn't catch that. Tap Reply and speak again."
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_SERVER ->
@@ -464,16 +577,17 @@ class MainActivity : AppCompatActivity() {
             override fun onEndOfSpeech() {}
             override fun onEvent(t: Int, b: Bundle?) {}
         })
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
-            .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         hud.listening = true; hud.hearing = null; hud.invalidate()
         replyButton.text = "Done"
         replyButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
-        sr.startListening(intent)
+        sr.startListening(intent())
     }
+
+    private fun intent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+        .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
 
     private fun toggleBench() {
         if (!benchRunning) {

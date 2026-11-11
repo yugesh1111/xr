@@ -8,7 +8,7 @@ The judges score: accuracy (35%), edge latency (20%), model size/quantization
 1. Start the emulator **from your own Terminal** so macOS can ask for the camera:
 
    ```bash
-   /opt/homebrew/share/android-commandlinetools/emulator/emulator -avd twofold_phone -no-snapshot-load -gpu host
+   /opt/homebrew/share/android-commandlinetools/emulator/emulator -avd twofold_phone -no-snapshot-load -gpu host -allow-host-audio
    ```
 
    Click **Allow** when macOS asks for camera and microphone access. The

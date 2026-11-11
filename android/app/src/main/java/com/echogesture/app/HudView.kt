@@ -44,6 +44,7 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     var signing = false
     var leftHand = false; var rightHand = false
     var mirror = false
+    var fit = false       // picture letterboxed (test clips) instead of filling the screen (camera)
     var insetTop = 0f     // status bar height
     var barTop = 0f       // y where the button bar starts
 
@@ -271,7 +272,7 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     private fun drawSkeleton(c: Canvas) {
         val f = frame ?: return
         // PreviewView FILL_CENTER: scale to cover, centred
-        val s = maxOf(width.toFloat() / imgW, height.toFloat() / imgH)
+        val s = if (fit) minOf(width.toFloat() / imgW, height.toFloat() / imgH) else maxOf(width.toFloat() / imgW, height.toFloat() / imgH)
         val ox = (width - imgW * s) / 2; val oy = (height - imgH * s) / 2
         fun px(n: Int): Pair<Float, Float>? {
             val x = f[n * 3]; val y = f[n * 3 + 1]

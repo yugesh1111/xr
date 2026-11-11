@@ -13,12 +13,17 @@ import kotlin.math.exp
 
 /** Segment of frames -> top-k glosses with the INT8 ONNX model. */
 class Recognizer(context: Context, nnapi: Boolean) : AutoCloseable {
-    data class Result(val words: List<String>, val probs: List<Float>, val featureMs: Double, val modelMs: Double)
+    /** [isSign]: the sign gate's verdict (true when no gate model is packaged). */
+    data class Result(val words: List<String>, val probs: List<Float>, val featureMs: Double, val modelMs: Double,
+                      val signProb: Float = 1f, val isSign: Boolean = true)
 
     private val env = OrtEnvironment.getEnvironment()
     private val session: OrtSession
     val vocab: List<String>
     private val length: Int
+    // sign gate (scripts/train_gate.py): "is this a sign from the vocabulary at all?"
+    private var gate: OrtSession? = null
+    private var gateThreshold = 0f
 
     init {
         val meta = JSONObject(context.assets.open("model_meta.json").bufferedReader().readText())
@@ -30,6 +35,10 @@ class Recognizer(context: Context, nnapi: Boolean) : AutoCloseable {
             if (nnapi) runCatching { addNnapi() }
         }
         session = env.createSession(context.assets.open("model_int8.onnx").readBytes(), opts)
+        runCatching {
+            gateThreshold = JSONObject(context.assets.open("gate_meta.json").bufferedReader().readText()).getDouble("threshold").toFloat()
+            gate = env.createSession(context.assets.open("gate_int8.onnx").readBytes(), opts)
+        }
     }
 
     fun recognize(frames: List<FloatArray>, k: Int = 3): Result {
@@ -38,7 +47,13 @@ class Recognizer(context: Context, nnapi: Boolean) : AutoCloseable {
         for ((i, f) in frames.withIndex()) System.arraycopy(f, 0, flat, i * f.size, f.size)
         val input = Features.modelInput(Clip.fromFloats(frames.size, flat), length)
         val t1 = System.nanoTime()
+        var signProb = 1f
         val logits = OnnxTensor.createTensor(env, FloatBuffer.wrap(input), longArrayOf(1, length.toLong(), Features.DIM.toLong())).use { x ->
+            gate?.run(mapOf("x" to x))?.use { out ->
+                @Suppress("UNCHECKED_CAST")
+                val g = (out[0].value as Array<FloatArray>)[0]
+                signProb = (1.0 / (1.0 + exp((g[0] - g[1]).toDouble()))).toFloat()
+            }
             session.run(mapOf("x" to x)).use { out ->
                 @Suppress("UNCHECKED_CAST")
                 (out[0].value as Array<FloatArray>)[0]
@@ -49,8 +64,9 @@ class Recognizer(context: Context, nnapi: Boolean) : AutoCloseable {
         val e = logits.map { exp((it - m).toDouble()) }
         val s = e.sum()
         val top = e.indices.sortedByDescending { e[it] }.take(k)
-        return Result(top.map { vocab[it] }, top.map { (e[it] / s).toFloat() }, (t1 - t0) / 1e6, (t2 - t1) / 1e6)
+        return Result(top.map { vocab[it] }, top.map { (e[it] / s).toFloat() }, (t1 - t0) / 1e6, (t2 - t1) / 1e6,
+            signProb, signProb >= gateThreshold)
     }
 
-    override fun close() = session.close()
+    override fun close() { session.close(); gate?.close() }
 }

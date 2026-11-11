@@ -4,7 +4,7 @@ top5_accuracy,93.13,%,,,,
 top1_official_test,81.59,%,reference,,eval_test_int8.json,"201 official WLASL100 test clips we could obtain; signers also in train: 121 clips, unseen: 80"
 model_size,6.23,MB,<= 20,PASS,model_int8.onnx,INT8 ONNX
 robustness_drop_landmark,1.06,points,<= 5,PASS,robustness_landmark.json,mean over conditions; worst side_view_40 3.1
-robustness_drop_video_enhanced,4.79,points,<= 5,PASS,robustness_video_enhanced.json,mean over conditions; worst blur 7.8
+robustness_drop_video_enhanced,4.64,points,<= 5,PASS,robustness_video_enhanced.json,mean over conditions; worst blur 7.8
 latency_p95_per_frame_phone,,ms,<= 50,,results_device.csv,no phone run yet: MediaPipe Holistic per camera frame (the real-time cost)
 latency_p95_classifier_phone,,ms,<= 50,,results_device.csv,"no phone run yet: features + INT8 model, once per sign"
 avg_power_phone,,mW,<= 500,,results_device.csv,"no phone run yet: whole phone, unplugged"
