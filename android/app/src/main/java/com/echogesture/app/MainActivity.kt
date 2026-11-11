@@ -39,7 +39,7 @@ import java.util.concurrent.Executors
 private const val SHOW_MIN_PROB = 0.45f
 private const val SHOW_MIN_MARGIN = 0.20f
 // below the gate but still a real candidate: shown as a grey "word?" with the next two
-// guesses, not added to the transcript or spoken. On held-out clips 20% of signs land
+// guesses, not added to the sentence or spoken. On held-out clips 20% of signs land
 // here and the right word is among the three shown 85% of the time.
 private const val GUESS_MIN_PROB = 0.25f
 // when the face is this big in the frame, most signs happen below the image edge
@@ -65,15 +65,18 @@ class MainActivity : AppCompatActivity() {
     private var brightChecks = 0
     private var speak = false
     private var tts: TextToSpeech? = null
-    private val transcript = ArrayDeque<String>()
+    private val sentence = com.echogesture.core.Sentence()
     private var frameIndex = 0L
     private var lastHandMs = 0L
     private var fps = 0.0
     private var lastFrameMs = 0L
     @Volatile private var testing = false
+    @Volatile private var cancelTest = false
+    private var cameraProvider: ProcessCameraProvider? = null
+    private lateinit var testButton: Button
     private var demoClose = false
     private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runTest { t -> listOf(t.pick(uri)) }
+        if (uri != null) runTest { t -> t.pick(uri) { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,7 +106,9 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, if (speak) "Voice on" else "Voice off", Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.bench).setOnClickListener { toggleBench(it as Button) }
-        findViewById<Button>(R.id.test).setOnClickListener {
+        testButton = findViewById(R.id.test)
+        testButton.setOnClickListener {
+            if (testing) { cancelTest = true; hud.status = "Stopping the test…"; hud.invalidate(); return@setOnClickListener }
             AlertDialog.Builder(this).setTitle("Test with videos")
                 .setItems(arrayOf("Built-in WLASL test clips", "Pick a video…")) { _, which ->
                     if (which == 0) runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
@@ -114,7 +119,11 @@ class MainActivity : AppCompatActivity() {
         intent.getStringExtra("demo")?.let { w ->
             hud.word = w.uppercase(); hud.confidence = intent.getFloatExtra("conf", 0.9f)
             hud.alternatives = listOf("BOOK", "BLUE"); hud.guess = intent.getBooleanExtra("guess", false); hud.shownAtMs = SystemClock.uptimeMillis() + 600_000
-            hud.transcript = listOf("MOTHER", "WANT", "DRINK", w.uppercase()); demoClose = intent.getBooleanExtra("close", false)
+            hud.sentences = listOf("Man help now."); hud.forming = "Mother drink ${w.lowercase()}"; demoClose = intent.getBooleanExtra("close", false)
+        }
+        hud.onClearSentence = {
+            sentence.clear(); hud.sentences = emptyList(); hud.forming = null; hud.invalidate()
+            Toast.makeText(this, "Sentence cleared", Toast.LENGTH_SHORT).show()
         }
         tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts?.language = Locale.US }
 
@@ -137,6 +146,8 @@ class MainActivity : AppCompatActivity() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             val provider = future.get()
+            cameraProvider = provider
+            if (testing) return@addListener
             val pv = Preview.Builder().build().also { it.surfaceProvider = preview.surfaceProvider }
             // 1280x720 instead of CameraX's default 640x480: hands that are small in the
             // image (signer further away) keep enough pixels for finger landmarks
@@ -190,7 +201,9 @@ class MainActivity : AppCompatActivity() {
             val left = !frame[Layout.LHAND * 3].isNaN(); val right = !frame[Layout.RHAND * 3].isNaN()
             val hands = left || right
             if (hands) lastHandMs = now
-            segmenter.push(frame)?.let { show(it) }
+            segmenter.push(frame, now)?.let { show(it) }
+            // Sentence is only touched on the UI thread (show() adds words there)
+            runOnUiThread { if (sentence.tick(SystemClock.uptimeMillis()) != null) { hud.sentences = sentence.finished(); hud.forming = sentence.forming() } }
             hud.signing = segmenter.state == Segmenter.State.SIGNING
             hud.leftHand = left; hud.rightHand = right
             hud.tooClose = demoClose || faceShare(frame) > TOO_CLOSE_FACE_SHARE
@@ -276,8 +289,8 @@ class MainActivity : AppCompatActivity() {
                 hud.shownAtMs = SystemClock.uptimeMillis()
             }
             if (sure) {
-                transcript.addLast(r.words[0]); while (transcript.size > 6) transcript.removeFirst()
-                hud.transcript = transcript.toList()
+                sentence.add(r.words[0], SystemClock.uptimeMillis())
+                hud.sentences = sentence.finished(); hud.forming = sentence.forming()
                 if (speak) tts?.speak(r.words[0].lowercase(), TextToSpeech.QUEUE_ADD, null, "w")
             }
             hud.perf += ", model ${"%.1f".format(r.modelMs)} ms"
@@ -286,14 +299,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runTest(job: (VideoTester) -> List<VideoTester.Row>) {
-        val rec = recognizer ?: return
-        testing = true
-        Toast.makeText(this, "Running test videos on the device…", Toast.LENGTH_SHORT).show()
+        val rec = recognizer ?: run {
+            Toast.makeText(this, "Still loading the model, try again in a moment", Toast.LENGTH_SHORT).show(); return
+        }
+        testing = true; cancelTest = false
+        // pause the camera: the test then gets the whole CPU, and the live
+        // pipeline can't interleave with it on the worker thread
+        cameraProvider?.unbindAll(); setLight(false)
+        hud.word = ""; hud.signing = false; hud.leftHand = false; hud.rightHand = false
+        hud.setFrame(FloatArray(Layout.N_POINTS * 3) { Float.NaN }, 1, 1)
+        hud.status = "Starting the test…"; hud.invalidate()
+        testButton.text = "Stop"
+        testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
         worker.execute {
-            val rows = runCatching { job(VideoTester(this, rec)) }
+            val rows = runCatching { job(VideoTester(this, rec) { cancelTest }) }
+            val stopped = cancelTest
             testing = false
             runOnUiThread {
                 hud.status = ""; hud.invalidate()
+                testButton.text = "Test"
+                testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_test, 0, 0)
+                segmenter.reset(); startCamera()
+                if (stopped && rows.getOrNull().isNullOrEmpty()) {
+                    Toast.makeText(this, "Test stopped", Toast.LENGTH_SHORT).show(); return@runOnUiThread
+                }
                 val dim = ContextCompat.getColor(this, R.color.paper_dim)
                 val sure = ContextCompat.getColor(this, R.color.sure)
                 val maybe = ContextCompat.getColor(this, R.color.maybe)

@@ -26,24 +26,24 @@ class SegmenterTest {
     private fun run(stream: List<FloatArray>): List<FloatArray>? {
         val s = Segmenter()
         var out: List<FloatArray>? = null
-        for (f in stream) s.push(f)?.let { out = it }
+        for ((i, f) in stream.withIndex()) s.push(f, i * 40L)?.let { out = it }
         return out
     }
 
     private fun rest(n: Int) = List(n) { frame(null) }
 
     @Test fun stillHandsInViewAreNotASign() {
-        val stream = rest(5) + List(100) { frame(0.5f to 0.7f, noise = 0.004f) } + rest(12)
+        val stream = rest(5) + List(100) { frame(0.5f to 0.7f, noise = 0.004f) } + rest(20)
         assertNull(run(stream))
     }
 
     @Test fun armMovementIsASign() {
-        val stream = rest(5) + List(30) { i -> frame(0.4f + 0.008f * i to 0.7f - 0.006f * i) } + rest(12)
+        val stream = rest(5) + List(30) { i -> frame(0.4f + 0.008f * i to 0.7f - 0.006f * i) } + rest(20)
         assertNotNull(run(stream))
     }
 
     @Test fun fingersMovingInPlaceIsASign() {  // e.g. COLOR, MOTHER: wrist stays put
-        val stream = rest(5) + List(30) { i -> frame(0.5f to 0.6f, finger = if ((i / 4) % 2 == 0) 0f else 0.12f) } + rest(12)
+        val stream = rest(5) + List(30) { i -> frame(0.5f to 0.6f, finger = if ((i / 4) % 2 == 0) 0f else 0.12f) } + rest(20)
         assertNotNull(run(stream))
     }
 }

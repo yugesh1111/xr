@@ -1004,6 +1004,15 @@ What was done, in order, and why (2026).
 - Guess tier: top probability >= 0.25 but below the caption gate is shown as a
   grey "word?" with two alternatives (20% of signs; right word among the three
   85% of the time). Not spoken, not added to the transcript.
+- Continuous signing: Segmenter timing in milliseconds (sign ends after
+  0.5 s still or 0.5 s without hands, max 3.5 s), so a short hold between
+  words is enough at any frame rate. `Sentence.kt` joins words into a running
+  sentence (4 s pause closes it, quick repeats merged); shown subtitle-style,
+  tap to clear. live_sim: single signs 62.7% correct on screen; 3 clips back to
+  back with 0.7 s holds 49-51% of words right and in order (WLASL clips start
+  and end at rest, which splits some signs).
+- Test mode pauses the camera, decodes frames in batches, shows per-frame
+  progress and can be stopped (it looked frozen before).
 - Front camera by default. New HUD (caption card, confidence meter, status
   chips, icon bar, Atkinson Hyperlegible).
 

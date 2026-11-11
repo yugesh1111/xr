@@ -26,9 +26,11 @@ Needs a 64-bit Android phone with Android 8 or newer.
 ## 3. Sign
 
 1. Start with your hands down.
-2. Sign **one word**, then bring your hands down again.
-3. The word appears at the top with a confidence (%). A short pause between
-   words is enough; the app finds where each sign starts and ends.
+2. Sign a word, then **hold still for about half a second** (or drop your
+   hands). The word appears at the top with a confidence (%) and joins the
+   sentence at the bottom.
+3. Keep going word by word. Stop for 4 seconds and the sentence ends with a
+   full stop; the next word starts a new one.
 
 What you see on screen:
 
@@ -42,7 +44,7 @@ What you see on screen:
 | `Both hands` / `One hand` / `No hands` | which hands it can see; the blue and orange dots match the hand outlines drawn on screen |
 | "Move the phone back..." (above the buttons) | too close, hands out of view |
 | "Too dark..." | add light |
-| Line of words under the caption | the last few words recognised, newest brightest |
+| Sentence at the bottom | the words so far; older sentences dimmed; mint dots while you sign. Tap it to clear |
 
 ![The app showing a sure word (left) and an unsure one with a hint (right)](media/app_ui.png)
 
@@ -65,12 +67,13 @@ white, who, woman, work, wrong, year, yes.
 | **Recognise** | give a word now for what you just signed (if it didn't show one by itself) |
 | **Voice** | speak each word aloud (offline voice); the speaker icon shows on or off |
 | **Bench** | start a measurement run (see 6); the button turns into **Stop** |
-| **Test** | run test videos instead of the camera (see 5) |
+| **Test** | run test videos instead of the camera (see 5); tap **Stop** to end early |
 
 ## 5. Check it works (no signer needed)
 
-**Test -> Built-in WLASL test clips.** Runs 10 test videos through the same
-pipeline. You get a list: each clip with the app's word and confidence, whether
+**Test -> Built-in WLASL test clips.** Pauses the camera and runs 10 test
+videos through the same pipeline (under a minute on a phone; progress shows
+above the buttons). You get a list: each clip with the app's word and confidence, whether
 the computer version agrees, and timing. Expected: 9 of 10 correct, all the same
 as the computer.
 

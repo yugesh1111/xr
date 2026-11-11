@@ -32,7 +32,10 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     var tooClose = false  // face fills too much of the frame: hands are mostly out of view
     var tooDark = false   // picture too dark for reliable hand tracking
     var ringLight = false // front camera in low light: white border lights the signer
-    var transcript: List<String> = emptyList()
+    var sentences: List<String> = emptyList()  // finished sentences, oldest first
+    var forming: String? = null                // the sentence still being signed
+    var onClearSentence: (() -> Unit)? = null  // tap on the sentence card
+    private var sentenceRect: RectF? = null
     var status = ""       // progress text (test mode); shown when not empty
     var perf = ""         // fps / latency, shown while a bench run is on
     var showPerf = false
@@ -78,7 +81,6 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
         var y = insetTop + 12 * dp
         y = drawChips(c, m, y, now) + 10 * dp
         y = drawCaption(c, m, y, now)
-        drawTranscript(c, y + 14 * dp)
         drawBottom(c, m)
         if (signing || now - shownAtMs in 0..4200) postInvalidateOnAnimation()
     }
@@ -171,29 +173,11 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
         return top + h
     }
 
-    private fun drawTranscript(c: Canvas, y: Float) {
-        if (transcript.isEmpty()) return
-        // newest word brightest, older ones fade back
-        val words = transcript.map { it.lowercase() }
-        val gap = body.measureText("  ")
-        val total = words.sumOf { body.measureText(it).toDouble() }.toFloat() + gap * (words.size - 1)
-        var x = (width - total) / 2
-        val h = 32 * dp
-        fill.color = col(R.color.scrim_soft)
-        c.drawRoundRect(RectF(x - 14 * dp, y, x + total + 14 * dp, y + h), h / 2, h / 2, fill)
-        words.forEachIndexed { i, w ->
-            body.color = cPaper
-            body.alpha = (255 * (0.35f + 0.65f * (i + 1) / words.size)).toInt()
-            c.drawText(w, x, y + h / 2 - (body.ascent() + body.descent()) / 2, body)
-            x += body.measureText(w) + gap
-        }
-        body.alpha = 255
-    }
-
     // --- hints and stats above the button bar ------------------------------------------
 
     private fun drawBottom(c: Canvas, m: Float) {
         var bottom = (if (barTop > 0) barTop else height.toFloat()) - 12 * dp
+        bottom = drawSentence(c, m, bottom)
         val lines = mutableListOf<Pair<String, Int>>()
         if (showPerf && perf.isNotEmpty()) lines += perf to cDim
         if (status.isNotEmpty()) lines += status to cPaper
@@ -223,6 +207,54 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
         c.drawRoundRect(RectF(m + 10 * dp, top + 12 * dp, m + 14 * dp, bottom - 12 * dp), 2 * dp, 2 * dp, fill)
         c.save(); c.translate(m + pad + 6 * dp, top + pad); layout.draw(c); c.restore()
     }
+
+    // --- running sentence, subtitle-style above the buttons ----------------------------
+
+    private val sentencePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = bold; textSize = 22 * sp }
+
+    /** Finished sentences dim, the one being signed bright with a caret while signing.
+     *  Shows the last 3 lines; tap the card to clear. Returns the new bottom edge. */
+    private fun drawSentence(c: Canvas, m: Float, bottom: Float): Float {
+        val open = forming
+        if (sentences.isEmpty() && open == null && !signing) { sentenceRect = null; return bottom }
+        val text = android.text.SpannableStringBuilder()
+        for (s in sentences) {
+            val st = text.length; text.append(s).append(' ')
+            text.setSpan(android.text.style.ForegroundColorSpan(cDim), st, text.length, 0)
+        }
+        if (open != null) text.append(open)
+        if (signing) {
+            val st = text.length; text.append(if (open == null && sentences.isEmpty()) "…" else " …")
+            text.setSpan(android.text.style.ForegroundColorSpan(cSure), st, text.length, 0)
+        }
+        val pad = 16 * dp; val w = (width - 2 * m).toInt()
+        sentencePaint.color = cPaper
+        val layout = StaticLayout.Builder.obtain(text, 0, text.length, sentencePaint, w - (2 * pad).toInt())
+            .setLineSpacing(0f, 1.15f).build()
+        val lines = minOf(3, layout.lineCount)
+        val firstLine = layout.lineCount - lines
+        val textH = (layout.getLineBottom(layout.lineCount - 1) - layout.getLineTop(firstLine)).toFloat()
+        val h = textH + 2 * pad
+        val rect = RectF(m, bottom - h, m + w, bottom)
+        fill.color = cScrim
+        c.drawRoundRect(rect, 20 * dp, 20 * dp, fill)
+        c.save()
+        c.clipRect(rect.left, rect.top + pad, rect.right, rect.bottom - pad)
+        c.translate(m + pad, rect.top + pad - layout.getLineTop(firstLine))
+        layout.draw(c)
+        c.restore()
+        sentenceRect = rect
+        return rect.top - 10 * dp
+    }
+
+    override fun onTouchEvent(e: android.view.MotionEvent): Boolean {
+        val r = sentenceRect ?: return false
+        if (!r.contains(e.x, e.y)) return false
+        if (e.action == android.view.MotionEvent.ACTION_UP) { onClearSentence?.invoke(); performClick() }
+        return true
+    }
+
+    override fun performClick(): Boolean { super.performClick(); return true }
 
     // --- skeleton -------------------------------------------------------------------
 

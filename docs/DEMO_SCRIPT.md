@@ -43,7 +43,7 @@ Good sequences: `man - help - now`, `drink - hot`, `computer - work`,
 |---|---|---|
 | 0:00-0:15 | Title card: EchoGesture, team, track | "Sign language to text, live, on the phone, no internet." |
 | 0:15-0:30 | App info: only the Camera permission; airplane mode on | "Nothing leaves the device." |
-| 0:30-1:30 | Live signing, 5-6 words. Keep the hand outlines, "Signing" chip, caption card and word history in frame. Turn **Voice** on for one or two words. | "Body and hand points from MediaPipe, a 6 MB INT8 model, word in about a second." |
+| 0:30-1:30 | Live signing, 5-6 words, letting the sentence build at the bottom (half-second pause between words, then 4 s to end the sentence). Keep the hand outlines, "Signing" chip, caption card and word history in frame. Turn **Voice** on for one or two words. | "Body and hand points from MediaPipe, a 6 MB INT8 model, word in about a second." |
 | 1:30-1:45 | Hands resting in view, nothing appears. Then one sign that comes up as grey "word?" with alternatives | "It only shows a word when it's sure; otherwise a marked guess." |
 | 1:45-2:05 | Robustness: dim the light (ring light/hint appears), lean in close ("Move the phone back"), sign one word from further away | "Low light, too close, far away." |
 | 2:05-2:25 | **Test -> Built-in WLASL test clips** -> "9 of 10 correct, same as the computer" | "Same answers on the phone as offline." |

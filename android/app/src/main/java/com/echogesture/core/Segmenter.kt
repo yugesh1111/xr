@@ -4,16 +4,20 @@ package com.echogesture.core
  * Turns a stream of frames into sign segments.
  *
  * Idle until a hand has been visible for a few frames, then collects frames.
- * The segment ends when the hands drop out of view, stay still for a while,
- * or the segment gets too long. A few frames from before the start are kept,
- * like the rest pose at the start of a WLASL clip.
+ * The segment ends when the hands drop out of view, pause briefly, or the
+ * segment gets too long. A few frames from before the start are kept, like the
+ * rest pose at the start of a WLASL clip.
+ *
+ * Timing is in milliseconds, not frames, so the same pause ends a sign whether
+ * the phone runs at 30 fps or the emulator at 6: you can sign word after word,
+ * holding still for half a second in between, without dropping your hands.
  */
 class Segmenter(
     private val startFrames: Int = 3,
-    private val endMissing: Int = 8,
-    private val endStill: Int = 15,
-    private val stillSpeed: Double = 0.004,
-    private val maxFrames: Int = 90,
+    private val endMissingMs: Long = 500,
+    private val endStillMs: Long = 500,
+    private val stillSpeed: Double = 0.1,    // image heights per second (0.004 per frame at 25 fps)
+    private val maxMs: Long = 3500,
     private val preRoll: Int = 5,
     // a segment counts as a sign when the wrist covers this much ground, or a
     // fingertip moves this much relative to the wrist (in face heights, 5-95%
@@ -22,7 +26,8 @@ class Segmenter(
     // stay below 0.12 / 0.17; 91% of WLASL test signs pass (scripts/live_sim.py).
     private val minWristRange: Double = 0.3,
     private val minFingerRange: Double = 0.4,
-    private val minFrames: Int = 8,
+    private val minFrames: Int = 5,
+    private val minMs: Long = 400,
 ) {
     enum class State { IDLE, SIGNING }
 
@@ -31,16 +36,20 @@ class Segmenter(
     private val history = ArrayDeque<FloatArray>()
     private val segment = ArrayList<FloatArray>()
     private var seenRun = 0
-    private var missingRun = 0
-    private var stillRun = 0
+    private var missingMs = 0L
+    private var stillMs = 0L
+    private var startMs = 0L
+    private var lastMs = -1L
     private var moved = false
     private var lastWrist: FloatArray? = null
     private val faceHeights = ArrayList<Double>()
 
-    /** Feed one frame (88*3 floats, NaN = missing). Returns a finished segment or null. */
-    fun push(frame: FloatArray): List<FloatArray>? {
+    /** Feed one frame (88*3 floats, NaN = missing) taken at [tMs]. Returns a finished segment or null. */
+    fun push(frame: FloatArray, tMs: Long): List<FloatArray>? {
         val hand = handSeen(frame, Layout.LHAND) || handSeen(frame, Layout.RHAND)
-        val speed = wristSpeed(frame)
+        val dt = if (lastMs < 0) 40L else (tMs - lastMs).coerceIn(1L, 500L)
+        lastMs = tMs
+        val speed = wristSpeed(frame) * 1000.0 / dt
         when (state) {
             State.IDLE -> {
                 history.addLast(frame)
@@ -49,23 +58,23 @@ class Segmenter(
                 if (seenRun >= startFrames) {
                     state = State.SIGNING
                     segment.clear(); segment.addAll(history)
-                    missingRun = 0; stillRun = 0; moved = false
+                    missingMs = 0; stillMs = 0; moved = false; startMs = tMs
                     faceHeights.clear()
                 }
             }
             State.SIGNING -> {
                 segment.add(frame)
                 faceHeight(frame)?.let { faceHeights.add(it) }
-                missingRun = if (hand) 0 else missingRun + 1
+                missingMs = if (hand) 0 else missingMs + dt
                 if (speed > stillSpeed * 3) moved = true
-                stillRun = if (hand && speed < stillSpeed) stillRun + 1 else 0
-                val done = missingRun >= endMissing || (moved && stillRun >= endStill) || segment.size >= maxFrames
+                stillMs = if (hand && speed < stillSpeed) stillMs + dt else 0
+                val done = missingMs >= endMissingMs || (moved && stillMs >= endStillMs) || tMs - startMs >= maxMs
                 if (done) {
                     state = State.IDLE
                     history.clear(); seenRun = 0
                     val out = ArrayList(segment)
                     segment.clear()
-                    return if (isSign(out)) out else null
+                    return if (tMs - startMs >= minMs && isSign(out)) out else null
                 }
             }
         }
@@ -75,7 +84,7 @@ class Segmenter(
     /** Frames collected so far in the current segment (for "recognise now"). */
     fun current(): List<FloatArray> = ArrayList(segment)
 
-    fun reset() { state = State.IDLE; history.clear(); segment.clear(); seenRun = 0 }
+    fun reset() { state = State.IDLE; history.clear(); segment.clear(); seenRun = 0; lastMs = -1; lastWrist = null }
 
     /** Enough frames and enough hand or finger movement relative to the face (scale-free). */
     fun isSign(frames: List<FloatArray>): Boolean {

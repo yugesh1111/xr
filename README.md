@@ -37,6 +37,10 @@ keep up with a conversation one word at a time.
   word); these are right about 95% of the time. Weaker guesses appear in grey
   as "word?" with the next two candidates. Hands resting in view never produce
   a word.
+- **Running sentence.** Sign word after word, pausing about half a second
+  between signs (no need to drop your hands). Each word joins the sentence at
+  the bottom of the screen; a 4-second pause ends it with a full stop. Tap the
+  sentence to clear it.
 - **Near or far.** Works with the phone at arm's length (shoulders out of
   frame) or with the signer small in the frame. Too close: it tells you to move
   back.
@@ -112,7 +116,8 @@ Predictions for every official test clip: [`results/predictions.jsonl`](results/
 | Signer far away | signer at 1/2 and 1/3 size | 76.9% / 77.2% |
 | Phone = computer | Kotlin feature code vs Python on 14 recorded cases | max difference ~1e-6 |
 | App end to end | built-in test on the Android emulator | 9/10, identical to Python |
-| Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 91.5%, correct caption 61.7% (was 50.7%), idle hands: 0 words in 600 runs |
+| Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 91.5%, correct caption 62.7% (was 50.7%), idle hands: 0 words in 600 runs |
+| Signing in a row | 3 test clips back to back, 0.7 s pause, hands kept up | 49-51% of words right and in order |
 | Offline | Docker container with `--network none`; app has no internet permission | works |
 | Unit tests | `pytest` (16) and Android `FeaturesTest` / `EnhanceTest` | all pass |
 
