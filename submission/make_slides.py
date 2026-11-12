@@ -280,11 +280,14 @@ def build(template, out, team, college, members):
     prs = Presentation(template)
     # new section slides, made from the template's own headers:
     # after Architecture (index 3) -> MODEL & DATA; after Track Final Output (index 5 once inserted) -> RESULTS
-    dup_slide(prs, 3, 3, "MODEL & DATA")
-    dup_slide(prs, 5, 5, "RESULTS")
+    dup_slide(prs, 3, 3, "TRAINING & EVALUATION")
+    dup_slide(prs, 3, 4, "PER-FRAME FLOW & EDGE CASES")
+    dup_slide(prs, 6, 6, "TRACK REQUIREMENTS")
+    dup_slide(prs, 6, 7, "RESULTS")
+    dup_slide(prs, 6, 8, "IMPLEMENTATION")
     s = prs.slides
-    # 0 title, 1 problem, 2 solution, 3 architecture, 4 model&data, 5 track output, 6 results,
-    # 7 differentiation, 8 demo, 9 brownie, 10 thank you
+    # 0 title, 1 problem, 2 solution, 3 architecture, 4 training, 5 flow+edge cases, 6 track output,
+    # 7 requirements, 8 results, 9 implementation, 10 differentiation, 11 demo, 12 brownie, 13 thank you
 
     # 1 - title
     sl = s[0]
@@ -346,55 +349,55 @@ def build(template, out, team, college, members):
         [("Offline: ", {"bold": True}), ("no internet permission at all", {})],
     ], size=14, bullets=True, space_after=8, name="Solution points")
 
-    # 4 - architecture
-    sl = s[3]
-    steps = [("Camera", "720p frame"), ("Landmarks", "MediaPipe Holistic, 88 points"),
-             ("Sign detector", "start / end of a sign"), ("Features", "239 per frame, body-relative"),
-             ("Sign gate", "0.23 MB INT8"), ("Word model", "6.2 MB INT8 ensemble")]
-    x0, y0, bw, bh, gap = 0.45, 1.15, 1.38, 0.95, 0.17
-    for i, (t, d) in enumerate(steps):
-        x = x0 + i * (bw + gap)
-        box(sl, x, y0, bw, bh, name=f"Step {i + 1}")
-        text(sl, x + 0.07, y0 + 0.1, bw - 0.14, 0.32, [[(t, {"bold": True, "size": 12, "color": CYAN if i < 3 else MINT})]],
-             align=PP_ALIGN.CENTER)
-        text(sl, x + 0.07, y0 + 0.43, bw - 0.14, 0.5, [[(d, {"size": 10})]], align=PP_ALIGN.CENTER)
-        if i < len(steps) - 1:
-            arrow(sl, x + bw + 0.01, y0 + bh / 2, x + bw + gap - 0.01, y0 + bh / 2)
-    picture(sl, MEDIA / "pipeline_frame.png", 0.45, 2.35, h=2.95, name="What the model sees")
-    text(sl, 0.45, 5.3, 2.7, 0.25, [[("What the model sees: points, not pixels", {"size": 9, "color": MUTED})]])
-    for i, (t, d) in enumerate([("Caption rule", "≥ 45% and 20 points ahead → word; weaker → grey 'word?'"),
-                                ("Sentence + voice", "words join a running sentence; offline text-to-speech"),
-                                ("Reply", "spoken answer → on-device speech recognition → captions")]):
-        y = 2.35 + i * 0.68
-        box(sl, 3.35, y, 6.2, 0.58, fill=PANEL2, name=f"Output {i + 1}")
-        text(sl, 3.5, y + 0.12, 1.75, 0.35, [[(t, {"bold": True, "size": 12, "color": AMBER})]])
-        text(sl, 5.2, y + 0.12, 4.3, 0.35, [[(d, {"size": 11})]])
-    text(sl, 3.35, 4.45, 6.2, 0.9, [
-        [("Why it is light: ", {"bold": True, "color": MINT}),
-         ("the word model never sees video, and runs once per sign rather than per frame; idle frames are skipped.", {})],
-    ], size=12, name="Architecture note")
+    # 4 - architecture: the draw.io diagram, as large as the slide allows
+    DIA = ROOT / "submission" / "diagrams"
 
-    # 5 - model & data
+    def diagram(sl, path, note):
+        from PIL import Image
+        iw, ih = Image.open(path).size
+        h = 4.52
+        w = h * iw / ih
+        if w > 9.5:
+            w, h = 9.5, 9.5 * ih / iw
+        x = (10 - w) / 2
+        box(sl, x - 0.06, 0.98, w + 0.12, h + 0.08, fill="FFFFFF", name="Diagram card")
+        picture(sl, path, x, 1.02, w=w, h=h, line=None, name="Diagram")
+        if note:
+            sl.notes_slide.notes_text_frame.text = note + ". The PNG next to it is full resolution for zooming."
+
+    sl = s[3]
+    diagram(sl, DIA / "architecture_device.png", "Editable source: submission/diagrams/architecture_device.drawio (draw.io)")
+
+    # 5 - training & evaluation diagram
     sl = s[4]
-    stat(sl, 0.45, 1.1, 2.15, 1.35, "1,466", "WLASL100 clips, 100 words, split by signer", CYAN, name="Stat clips")
-    stat(sl, 2.75, 1.1, 2.15, 1.35, "94,477", "Kaggle ASL Signs clips used for pre-training", CYAN, name="Stat kaggle")
-    stat(sl, 0.45, 2.6, 2.15, 1.35, "4 × 1.28 M", "parameters each: convolution + attention networks", MINT, num_size=28, name="Stat params")
-    stat(sl, 2.75, 2.6, 2.15, 1.35, "6.2 MB", "INT8 ONNX, static per-channel quantization", MINT, name="Stat size")
-    stat(sl, 0.45, 4.1, 4.45, 1.2, "3 signer groups", "held out of all training for the accuracy number", AMBER, num_size=24, name="Stat holdout")
-    box(sl, 5.15, 1.1, 4.4, 4.2, name="Training box")
-    text(sl, 5.33, 1.2, 4.1, 0.4, [[("Four networks, four views of the data", {"bold": True, "size": 14, "color": MINT})]])
-    text(sl, 5.33, 1.65, 4.1, 2.0, [
-        [("Base: ", {"bold": True}), ("WLASL training clips", {})],
-        [("Near/far: ", {"bold": True}), ("+ phone close (shoulders cut) and signer far away", {})],
-        [("Degraded: ", {"bold": True}), ("+ dark, blurred, low-resolution video", {})],
-        [("Pre-trained: ", {"bold": True}), ("first on 94k Kaggle phone clips, then WLASL", {})],
-    ], size=12, bullets=True, space_after=5)
-    text(sl, 5.33, 3.6, 4.1, 0.35, [[("Features (239 per frame)", {"bold": True, "size": 13, "color": CYAN})]])
-    text(sl, 5.33, 3.95, 4.1, 1.3, [[("Hand shape, palm orientation, hand location relative to chest and face, motion, "
-                                       "mouth. Body-relative, so distance, roll and handedness drop out.", {"size": 12})]])
+    diagram(sl, DIA / "architecture_training.png", "Editable source: submission/diagrams/architecture_training.drawio")
+
+    # 6 - per-frame flow + edge cases
+    sl = s[5]
+    from PIL import Image
+    iw, ih = Image.open(DIA / "flowchart.png").size
+    fh = 4.45
+    fw = fh * iw / ih
+    box(sl, 0.39, 0.98, fw + 0.12, fh + 0.08, fill="FFFFFF", name="Flow card")
+    picture(sl, DIA / "flowchart.png", 0.45, 1.02, w=fw, h=fh, line=None, name="Flowchart")
+    edge = [("No hands in view", "Listening; every 2nd frame skipped"),
+            ("Hands resting / fidget", "Movement-range check + sign gate → nothing"),
+            ("Unsure sign", "Grey 'word?' + 2 alternatives, not spoken"),
+            ("Out-of-vocabulary sign", "Sign gate / low confidence → nothing"),
+            ("Too dark", "Torch or screen ring light; hint"),
+            ("Blurry frame", "Adaptive sharpening before tracking"),
+            ("Too close (face > 40%)", "\"Move the phone back\" hint"),
+            ("Shoulders out of frame", "Virtual shoulders from the face"),
+            ("Signer far away", "Trained on far copies: 77% at ⅓ size"),
+            ("Left-handed signer", "Mirrored to the dominant hand"),
+            ("Hand lost for a moment", "Gaps ≤ 6 frames interpolated"),
+            ("Object passes in front", "Tested: −4.0 points"),
+            ("Missing camera / voice / speech pack", "Falls back, tells the user")]
+    tx = 0.45 + fw + 0.35
+    table(sl, tx, 1.0, 9.55 - tx, [1.85, 9.55 - tx - 1.85], edge, ["Edge case", "What the app does"], size=9, row_h=0.31)
 
     # 6 - track final output
-    sl = s[5]
+    sl = s[6]
     for sh in sl.shapes:
         if sh.has_text_frame and sh.text_frame.text.startswith("Track Final Output"):
             set_text(sh, "TRACK FINAL OUTPUT")
@@ -418,8 +421,22 @@ def build(template, out, team, college, members):
         [("Demo video ", {"bold": True}), ("2 min", {})],
     ], size=12, bullets=True, space_after=5)
 
-    # 7 - results charts
-    sl = s[6]
+    # 7b - requirements from the track slides, with evidence
+    sl = s[7]
+    reqs = [("Fully on-device, exocentric: camera → text or audio", "Android app, back camera; captions + offline voice", "APK, demo video"),
+            ("Moving heads, angled signers, low light", "Body-relative features; view augmentation; torch / ring light", "Robustness 4.64 pt"),
+            ("On-device privacy, zero cloud streaming", "No INTERNET permission; nothing stored or sent", "AndroidManifest.xml"),
+            ("Pose-invariant 3D hand features", "Hand shape in the hand's frame, location in the body's frame", "features.py, Features.kt"),
+            ("Quantized TFLite / ONNX, < 20 MB INT8", "ONNX INT8 6.23 MB + gate 0.23 MB", "models/, export_onnx.py"),
+            ("Latency ≤ 50 ms", "14.0 ms per frame p95; word model 5.4 ms", "sustained_cpu.json"),
+            ("Captions or audio, two-way conversation", "Captions, voice, Reply turns speech into captions", "demo video"),
+            ("predict(), predictions.jsonl, results.csv", "main.py; 201 test clips; 5 of 6 PASS", "results/"),
+            ("Occlusions & HUD clarity (25%)", "Occlusion −4.0 pt; confidence bar, hints, conversation", "robustness json"),
+            ("Python 3.11, requirements.txt, README, zip layout", "Checked on 3.11.15; make_submission.py", "submission/README.md")]
+    table(sl, 0.4, 1.02, 9.2, [3.2, 3.9, 2.1], reqs, ["Track 02 asks for", "Palmcast", "Evidence"], size=10, row_h=0.38)
+
+    # 8 - results charts
+    sl = s[8]
     bar_chart(sl, 0.4, 1.05, 4.7, 2.3, ["Group A", "Group B", "Group C", "Official test"], [("Top-1", [80.8, 78.5, 74.9, 81.6])],
               "Accuracy on signers never seen (target 70%)", [MINT, MINT, MINT, CYAN], vmin=0, vmax=100, name="Chart holdout")
     bar_chart(sl, 5.0, 1.05, 4.6, 2.3, ["Clean", "Dark", "Blur", "Tilt 15°", "Low res", "Occluded"],
@@ -431,8 +448,24 @@ def build(template, out, team, college, members):
     bar_chart(sl, 5.0, 3.4, 4.6, 2.0, ["Per frame", "Word model", "Limit"], [("ms", [14.0, 5.4, 50])],
               "Latency p95, ms (laptop CPU, 10-min run)", [MINT, MINT, MUTED], vmin=0, vmax=60, fmt='0.0', name="Chart latency")
 
-    # 8 - differentiation: numbers first
-    sl = s[7]
+    # 9 - implementation photos (real recordings)
+    sl = s[9]
+    shots = [("impl_live_help.png", "Live: signing \"help\" → help 54%"),
+             ("impl_online_clip.png", "Uploaded online clip being read"),
+             ("impl_online_result.png", "Its answer: basketball 81%"),
+             ("impl_builtin.png", "Built-in test: 9 of 10")]
+    for i, (f, cap) in enumerate(shots):
+        x = 0.4 + i * 1.62
+        picture(sl, MEDIA / f, x, 1.02, h=3.3, name=f"Shot {i + 1}")
+        text(sl, x - 0.05, 4.37, 1.6, 0.6, [[(cap, {"size": 10})]], name=f"Caption {i + 1}")
+    picture(sl, MEDIA / "impl_terminal.png", 6.95, 1.02, w=2.65, name="Terminal")
+    text(sl, 6.95, 2.95, 2.65, 1.2, [[("Python predict() on the same 9 online clips: 6 of 9 right; results.csv: 5 of 6 PASS "
+                                       "(Python 3.11).", {"size": 10})]], name="Terminal caption")
+    text(sl, 0.4, 5.0, 9.2, 0.4, [[("All screenshots are from screen recordings of the release APK on the Android emulator "
+                                     "and a terminal session; see the demo videos.", {"size": 10, "color": MUTED})]])
+
+    # 10 - differentiation: numbers first
+    sl = s[10]
     tiles = [("78.1%", "on people the model never saw (whole signers held out)", MINT),
              ("~7%", "of fidgets shown as a word, down from 33-45%, thanks to the sign gate", CYAN),
              ("2-way", "signs become text and speech; spoken replies become captions", AMBER),
@@ -442,15 +475,14 @@ def build(template, out, team, college, members):
     for i, (n, l, c) in enumerate(tiles):
         stat(sl, 0.45 + (i % 3) * 3.07, 1.15 + (i // 3) * 2.1, 2.92, 1.85, n, l, c, num_size=36, name=f"Diff {i + 1}")
 
-    # 9 - demo & local setup
-    sl = s[8]
+    # 11 - demo & local setup
+    sl = s[11]
     picture(sl, MEDIA / "sentence_score.png", 0.45, 1.05, h=4.3, name="Sentence test score")
     text(sl, 2.5, 1.05, 3.2, 0.4, [[("Demo", {"bold": True, "size": 16, "color": AMBER})]])
     text(sl, 2.5, 1.45, 3.2, 3.8, [
-        "Video: submission/Palmcast_demo.mp4 (2 min).",
-        "In-app sentence test: 30 WLASL test clips, live pipeline, 20 words right.",
-        "Built-in test: 10 clips, 9 right, same as Python.",
-        "App: Palmcast-arm64.apk on the repo's Releases page.",
+        "Videos: submission/Palmcast_demo.mp4 (2:53) and Palmcast_demo_full.mp4 (6:16).",
+        "Run it as: Android APK (Releases), Python predict(), or Docker --network none.",
+        "Live camera, 9 online clips (6 right), built-in test (9/10), sentence test (20/30).",
     ], size=12, bullets=True, space_after=7, name="Demo points")
     box(sl, 5.9, 1.05, 3.65, 4.25, name="Setup box")
     text(sl, 6.05, 1.12, 3.4, 0.35, [[("Local setup", {"bold": True, "size": 14, "color": AMBER})]])
@@ -461,8 +493,8 @@ def build(template, out, team, college, members):
     text(sl, 6.05, 1.5, 3.45, 3.8, [[(c, {"font": "Courier New", "size": 9.5, "color": TEXT if not c.startswith("#") else MUTED})]
                                     for c in code], space_after=0, name="Setup commands")
 
-    # 10 - brownie: gate chart + features
-    sl = s[9]
+    # 12 - brownie: gate chart + features
+    sl = s[12]
     bar_chart(sl, 0.4, 1.05, 4.9, 4.3, ["Hands resting", "Fidgeting", "Other signs", "Real signs"],
               [("Without gate", [45.0, 33.1, 10.4, 65.6]), ("With gate", [7.2, 7.4, 8.8, 58.8])],
               "How often a word appears (%)", [MUTED, MINT], vmin=0, vmax=80, name="Chart gate", legend=True)
@@ -478,8 +510,8 @@ def build(template, out, team, college, members):
         text(sl, x + 0.12, y + 0.1, 1.75, 0.35, [[(t, {"bold": True, "size": 12, "color": c})]])
         text(sl, x + 0.12, y + 0.45, 1.75, 0.8, [[(b, {"size": 11})]])
 
-    # 11 - thank you
-    sl = s[10]
+    # 13 - thank you
+    sl = s[13]
     for sh in sl.shapes:
         if sh.name == "Text 25":
             p = sh.text_frame.paragraphs[0]

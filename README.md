@@ -13,7 +13,8 @@ Language Prediction on Edge Device"**.
 |---|---|
 | **Android app (APK)** | [Palmcast-arm64.apk](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) - any 64-bit Android phone, Android 8+ |
 | **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
-| **Demo video** | [submission/Palmcast_demo.mp4](submission/Palmcast_demo.mp4) - 2 min, 30 test clips through the live pipeline |
+| **Demo video** | [submission/Palmcast_demo.mp4](submission/Palmcast_demo.mp4) (2:53) and the detailed [Palmcast_demo_full.mp4](submission/Palmcast_demo_full.mp4) (6:16): live signing, 9 online ASL videos uploaded into the app, built-in test, 30-clip sentence test, Python `predict()` |
+| **Architecture** | [device](submission/diagrams/architecture_device.png), [training and evaluation](submission/diagrams/architecture_training.png), [per-frame flowchart](submission/diagrams/flowchart.png) (draw.io sources next to them) |
 | **Presentation** | [submission/Palmcast_XR_Hackathon_Track02.pptx](submission/Palmcast_XR_Hackathon_Track02.pptx) |
 | **Submission package** | `python scripts/make_submission.py` builds `<team>.zip` (src/ + results/) in the organisers' layout |
 | **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
@@ -63,6 +64,8 @@ keep up with a conversation one word at a time.
 Vocabulary: the 100 words of WLASL100, the list the organisers asked for.
 
 ## How it works
+
+![On-device architecture](submission/diagrams/architecture_device.png)
 
 ```
 camera frame -> MediaPipe Holistic -> 88 body, hand and face points
@@ -130,6 +133,9 @@ Predictions for every official test clip: [`results/predictions.jsonl`](results/
 | Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 95.0%, correct caption 62.7% with the sign gate (65.7% without; 50.7% before the fixes), idle hands: 0 words in 600 runs |
 | Signing in a row | 3 test clips back to back, 0.7 s pause, hands kept up | about 50% of words right and in order |
 | Not a sign | held-out non-signs: stretches before/after the sign in WLASL clips, synthetic fidgets (hand drifts, goes to the face, hovers), Kaggle signs outside the 100 words (`scripts/train_gate.py`, `results/gate_report.json`) | word shown without the gate: 45% / 33% / 10%; with it 7% / 7% / 9%, keeping 90% of real signs |
+| Online ASL videos | 9 clips, one from each of 9 ASL websites (first unused test clip per site), uploaded through Test -> Pick a video | 6 of 9 right in the app and in `main.py` |
+| Docker, offline | `docker run --network none` (Python 3.11 image) on the same 9 clips | 7 of 9 right (Linux build of the libraries differs slightly) |
+| Live signing | "help" signed to the laptop camera through the emulator | help shown at 54%, then as a grey guess |
 | Sentence test in the app | 10 three-word sentences = 30 WLASL test clips (always the first test clip of each word, not picked by result), streamed through the live pipeline on the emulator (Test -> Sentence test) | 20 of 30 words right and in order, 1 wrong word (want -> what), 9 not shown |
 | Offline | Docker container with `--network none`; app has no internet permission | works |
 | Unit tests | `pytest` (16) and Android `FeaturesTest` / `EnhanceTest` | all pass |

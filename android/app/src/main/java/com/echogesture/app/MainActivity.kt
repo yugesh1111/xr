@@ -370,7 +370,18 @@ class MainActivity : AppCompatActivity() {
         testButton.text = "Stop"
         testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
         worker.execute {
-            val rows = runCatching { job(VideoTester(this, rec) { cancelTest }) }
+            val view = findViewById<android.widget.ImageView>(R.id.clip)
+            runOnUiThread { hud.fit = true; hud.mirror = false; view.visibility = View.VISIBLE }
+            val rows = runCatching {
+                job(VideoTester(this, rec, { cancelTest }) { bmp, f ->
+                    val l = !f[Layout.LHAND * 3].isNaN(); val r = !f[Layout.RHAND * 3].isNaN()
+                    runOnUiThread {
+                        view.setImageBitmap(bmp); hud.leftHand = l; hud.rightHand = r
+                        hud.setFrame(f, bmp.width, bmp.height)
+                    }
+                })
+            }
+            runOnUiThread { hud.fit = false; view.visibility = View.GONE; view.setImageDrawable(null) }
             val stopped = cancelTest
             testing = false
             runOnUiThread {

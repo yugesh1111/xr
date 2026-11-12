@@ -17,7 +17,9 @@ import org.json.JSONArray
  * answer can be compared with both.
  */
 class VideoTester(private val context: Context, private val recognizer: Recognizer,
-                  private val cancelled: () -> Boolean = { false }) {
+                  private val cancelled: () -> Boolean = { false },
+                  /** Called with each decoded frame and its landmarks, so the screen can show what is being tested. */
+                  private val onFrame: (Bitmap, FloatArray) -> Unit = { _, _ -> }) {
     data class Row(val name: String, val truth: String?, val python: String?, val app: String,
                    val confidence: Float, val frames: Int, val landmarkMsPerFrame: Double, val modelMs: Double)
 
@@ -70,7 +72,9 @@ class VideoTester(private val context: Context, private val recognizer: Recogniz
                     if (bmp == null) continue
                     val argb = if (bmp.config == Bitmap.Config.ARGB_8888) bmp else bmp.copy(Bitmap.Config.ARGB_8888, false)
                     val t0 = System.nanoTime()
-                    frames.add(lm.detect(argb, if (durationMs > 0 && n > 0) (i + k) * durationMs / n else (i + k) * 33L))
+                    val f = lm.detect(argb, if (durationMs > 0 && n > 0) (i + k) * durationMs / n else (i + k) * 33L)
+                    frames.add(f)
+                    onFrame(argb, f)
                     landmarkMs += (System.nanoTime() - t0) / 1e6
                 }
                 i += batch.size.coerceAtLeast(1)
