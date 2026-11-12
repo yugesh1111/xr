@@ -1,32 +1,73 @@
-# Demo video speech script
+# Speech script - Palmcast walkthrough (2:47)
 
-Read each part while its chapter is on screen. Timings are from the videos in this folder.
+For `submission/Palmcast_walkthrough.mp4`. Read at a relaxed pace (about 140
+words a minute). Each part lines up with the label on screen; the times are
+where that part starts. If a part runs short, just pause - the picture keeps
+going. Record in a quiet room, phone mic about 20 cm away, one take per part
+is fine (send the parts as separate files and they will be placed on the
+timeline).
 
-## Palmcast_demo.mp4 (175 s)
+---
 
-| time | chapter | say |
-|---|---|---|
-| 0:00-0:08 | title | We are team WeCode, VIT Chennai. This is Palmcast: sign language to text and speech, on the phone, offline. |
-| 0:08-0:24 | live | I sign help to the camera. Hands are tracked, and the word appears: help, fifty four percent. Unsure signs show as a grey guess. |
-| 0:24-1:11 | online | Real A S L videos from nine websites, uploaded into the app and read with the same pipeline as the camera. Six of nine are right, and the misses are shown too. |
-| 1:11-1:43 | builtin | Ten official test clips on the phone: nine right, all the same as our Python version. |
-| 1:43-2:19 | sentence | Thirty clips from unseen signers, as ten sentences. Words join a running sentence: twenty of thirty right, no false words from resting hands. |
-| 2:19-2:34 | terminal | The same models on a computer: predict on Python 3.11, and results dot c s v. |
-| 2:34-2:42 | requirements | Every track requirement is covered, on-device and private. |
-| 2:42-2:50 | results | Seventy eight percent, fourteen milliseconds, six point two megabytes. |
-| 2:50-2:54 | end | All on GitHub. Thank you. |
+### 01 · Live camera, on the phone - 0:00 to 0:14  (about 30 words)
 
-## Palmcast_demo_full.mp4 (407 s)
+> This is Palmcast, running on an Android phone with no internet at all.
+> I sign "help" to the camera. The app tracks my hands, cuts out the sign,
+> and shows **help** at fifty-four percent.
 
-| time | chapter | say |
-|---|---|---|
-| 0:00-0:15 | title | Hi, we are team WeCode from VIT Chennai. This is Palmcast, our answer to Track 2, EchoGesture. Palmcast turns American Sign Language into text and speech, live, on a phone, with no internet and no cloud. |
-| 0:15-0:33 | install | Palmcast ships as one Android app. Download the APK from our GitHub releases page and install it on any 64-bit Android phone. It asks only for the camera, and the microphone for replies. It has no internet permission at all, so video of people never leaves the device. |
-| 0:33-0:48 | live | Here I am signing help to the camera. The app tracks my body and both hands, drawn as outlines. When the sign ends, the word appears: help, at fifty four percent. When it is less sure, it shows a grey guess with two alternatives instead of pretending. |
-| 0:48-3:09 | online | Next, real A S L videos from nine different websites, including YouTube, Signing Savvy and Spread the Sign. Each one is uploaded into the app through Pick a video, and read with exactly the same pipeline as the camera. You can see the signer, the hand outlines, and then the answer. Basketball, clothes, cow, full, but and change are right. Candy, bowling and accident are wrong, and we show those too. Six of nine, from sources the model has never seen. |
-| 3:09-4:21 | builtin | The built-in test runs ten official WLASL test clips on the phone. Nine are right, and every single answer matches our Python version, so the app and the evaluation code agree. |
-| 4:21-5:44 | sentence | The sentence test streams thirty clips, from signers the model never trained on, as ten three-word sentences. Each word appears as its sign ends and joins a running sentence. A pause adds the full stop. Twenty of the thirty words come out right and in order, and resting hands never produce a word. |
-| 5:44-6:03 | terminal | The same models run on a computer through the predict function the brief asks for, on Python 3.11. It gives a word, a confidence and a latency for every clip, and results dot c s v shows five of six targets passing. |
-| 6:03-6:22 | requirements | Every requirement of the track is covered: fully on-device and exocentric, robust to moving heads, angled signers and low light, zero cloud streaming, pose-invariant hand features, an INT8 ONNX model far under twenty megabytes, and captions and audio for a two-way conversation. |
-| 6:22-6:39 | results | Our numbers: seventy eight percent accuracy on people the model never saw, fourteen milliseconds per frame, a six point two megabyte model, and a drop of four point six points under dark, blur, tilt, low resolution and occlusion. Power will be measured on a phone. |
-| 6:39-6:47 | end | Everything is on GitHub: code, models, results, the app, the slides and this video. Thank you. |
+### 02 · Sentences building as they are signed - 0:14 to 0:58  (about 95 words)
+
+> Signing is continuous, so Palmcast doesn't wait for a button. A sign ends
+> when the hands pause for half a second, the word is recognised, and it
+> joins the sentence that is forming at the top.
+>
+> These signers were never seen in training. "Man help now." "Woman drink
+> hot." "Hat blue white."
+>
+> Words the model is sure about are shown in white and spoken. A fair guess
+> is shown in grey with a question mark and is never spoken. And when the hands
+> are resting, nothing is shown - a sign gate and a landmark filter stop
+> jitter and fidgeting from turning into words.
+
+### 03 · A video from the web, uploaded into the app - 0:58 to 1:29  (about 60 words)
+
+> It also works on video it has never seen. Here I pick a clip downloaded from
+> aslbricks.org. The phone reads it frame by frame - you can see the hand
+> outline on every frame - and answers **basketball**, eighty-one percent.
+> We tried nine clips from nine different websites: six right on the phone,
+> the same six as our Python code.
+
+### 04 · Sentence test on the phone - 1:29 to 2:06  (about 70 words)
+
+> To test sentences honestly, the app plays thirty test clips as ten
+> three-word sentences through exactly the live pipeline: hands drop between
+> words, a long pause ends the sentence. The result is twenty of thirty words
+> right and in the right order. Single words from new signers are right
+> seventy-eight percent of the time, against a target of seventy.
+
+### 05 · Built-in test - 2:06 to 2:30  (about 45 words)
+
+> The built-in test runs ten official clips on the phone and compares with the
+> computer: nine of ten right, and the same answer as Python on every clip.
+> The phone and the evaluation code are one pipeline, not two.
+
+### 06 · predict() for the evaluators - 2:30 to 2:47  (about 35 words)
+
+> For the judges, `predict()` in `main.py` runs fully offline. The word model
+> is six point two megabytes in INT8, under fourteen milliseconds per frame.
+> Palmcast - sign language, on the device, in real time.
+
+---
+
+## Numbers you can quote (all measured, in `results/`)
+
+| | |
+|---|---|
+| Top-1 on signers never seen in training | 78.1% (target 70%) |
+| Official WLASL100 test clips | 81.6% |
+| Model size, INT8 | 6.2 MB + 0.23 MB sign gate (limit 20 MB) |
+| Latency p95 per frame | 14.0 ms (limit 50 ms) |
+| Accuracy drop: dark, blur, tilt, low-res, occlusion | 4.6 points (limit 5) |
+| Thermal drift over 10 minutes | 5.3% (limit 20%) |
+| Resting / fidgeting hands | 0 false words in 600 runs |
+| Landmark filter, with webcam-like jitter | false words 140/600 → 0/600; 3-sign sentences 33% → 49% |

@@ -36,6 +36,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.camera.core.Camera
+import com.echogesture.core.LandmarkFilter
 import com.echogesture.core.Layout
 import com.echogesture.core.Segmenter
 import java.util.Locale
@@ -61,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     private var landmarks: Landmarks? = null
     private var recognizer: Recognizer? = null
     private val segmenter = Segmenter()
+    /** One Euro filter on the landmarks before sign detection (core/LandmarkFilter.kt). */
+    private val smoother = LandmarkFilter()
     private var stats = Stats(this)
     private var benchRunning = false
     // back camera: the brief is exocentric - the device films the person signing to you; Flip to sign to it yourself
@@ -203,7 +206,7 @@ class MainActivity : AppCompatActivity() {
             }
             val selector = if (backCamera) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
             hud.mirror = !backCamera
-            segmenter.reset()
+            segmenter.reset(); smoother.reset()
             provider.unbindAll()
             setLight(false)
             camera = provider.bindToLifecycle(this, selector, pv, analysis)
@@ -222,7 +225,7 @@ class MainActivity : AppCompatActivity() {
             val bmp = rotate(image.toBitmap(), image.imageInfo.rotationDegrees)
             if (frameIndex % 15 == 0L) checkLight(meanLuma(bmp))
             val t0 = SystemClock.elapsedRealtimeNanos()
-            val frame = lm.detect(bmp, image.imageInfo.timestamp / 1_000_000)
+            val frame = smoother.filter(lm.detect(bmp, image.imageInfo.timestamp / 1_000_000), now)
             val ms = (SystemClock.elapsedRealtimeNanos() - t0) / 1e6
             stats.frame(ms)
             if (lastFrameMs > 0) fps = 0.9 * fps + 0.1 * (1000.0 / (now - lastFrameMs).coerceAtLeast(1))
@@ -451,7 +454,7 @@ class MainActivity : AppCompatActivity() {
         testButton.setCompoundDrawablesRelativeWithIntrinsicBounds(0, R.drawable.ic_stop, 0, 0)
         worker.execute {
             val report = StringBuilder(); var right = 0; var total = 0
-            segmenter.reset(); clipClockMs = 0
+            segmenter.reset(); smoother.reset(); clipClockMs = 0
             var lastFrame = FloatArray(Layout.N_POINTS * 3) { Float.NaN }
             runCatching {
                 for (si in 0 until list.length()) {
@@ -475,8 +478,8 @@ class MainActivity : AppCompatActivity() {
                             val batch = r.getFramesAtIndex(i, minOf(12, n - i))
                             for (bmp0 in batch) {
                                 val bmp = if (bmp0.config == Bitmap.Config.ARGB_8888) bmp0 else bmp0.copy(Bitmap.Config.ARGB_8888, false)
-                                val frame = lm.detect(bmp, clipClockMs + dt)
                                 clipClockMs += dt
+                                val frame = smoother.filter(lm.detect(bmp, clipClockMs), clipClockMs)
                                 lastFrame = frame
                                 val before = segmenter.lastEnd
                                 segmenter.push(frame, clipClockMs)?.let { show(it) }
@@ -494,7 +497,7 @@ class MainActivity : AppCompatActivity() {
                         val rest = lastFrame.copyOf()
                         for (k in Layout.LHAND * 3 until (Layout.RHAND + 21) * 3) rest[k] = Float.NaN
                         val before = segmenter.lastEnd
-                        repeat(16) { clipClockMs += 40; segmenter.push(rest, clipClockMs)?.let { show(it) } }
+                        repeat(16) { clipClockMs += 40; segmenter.push(smoother.filter(rest, clipClockMs), clipClockMs)?.let { show(it) } }
                         android.util.Log.i("Palmcast", "clip $id (${truth[wi]}) end: ${if (segmenter.lastEnd !== before) segmenter.lastEnd else "no segment, state=${segmenter.state}"}")
                     }
                     val latch = java.util.concurrent.CountDownLatch(1)

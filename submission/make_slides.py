@@ -417,7 +417,7 @@ def build(template, out, team, college, members):
         [("INT8 ONNX ", {"bold": True}), ("+ conversion script", {})],
         [("README, Docker, ", {"bold": True}), ("Python 3.11", {})],
         [("Android APK", {"bold": True})],
-        [("Demo videos ", {"bold": True}), ("2:53 and 6:16", {})],
+        [("Demo video ", {"bold": True}), ("2:47 walkthrough", {})],
     ], size=12, bullets=True, space_after=5)
 
     # 7b - requirements from the track slides, with evidence
@@ -476,19 +476,22 @@ def build(template, out, team, college, members):
 
     # 11 - demo & local setup
     sl = s[11]
-    picture(sl, MEDIA / "sentence_score.png", 0.45, 1.05, h=4.3, name="Sentence test score")
-    text(sl, 2.5, 1.05, 3.2, 0.4, [[("Demo", {"bold": True, "size": 16, "color": AMBER})]])
-    text(sl, 2.5, 1.45, 3.2, 3.8, [
-        "Videos: submission/Palmcast_demo.mp4 (2:53) and Palmcast_demo_full.mp4 (6:16).",
-        "Run it as: Android APK (Releases), Python predict(), or Docker --network none.",
-        "Live camera, 9 online clips (6 right), built-in test (9/10), sentence test (20/30).",
-    ], size=12, bullets=True, space_after=7, name="Demo points")
+    # the walkthrough video itself, playable in PowerPoint (click to play)
+    vid = sl.shapes.add_movie(str(ROOT / "submission" / "Palmcast_walkthrough.mp4"), Inches(0.45), Inches(1.05),
+                              Inches(5.25), Inches(5.25 * 9 / 16),
+                              poster_frame_image=str(MEDIA / "walkthrough_poster.png"), mime_type="video/mp4")
+    vid.name = "Walkthrough video"
+    text(sl, 0.45, 4.1, 5.25, 1.3, [
+        "Live phone camera · sentences forming · a web video uploaded · sentence test 20/30 · built-in test 9/10 · predict().",
+        "Real screen recordings only, 2:47. File: submission/Palmcast_walkthrough.mp4.",
+    ], size=11, bullets=True, space_after=4, name="Demo points")
     box(sl, 5.9, 1.05, 3.65, 4.25, name="Setup box")
     text(sl, 6.05, 1.12, 3.4, 0.35, [[("Local setup", {"bold": True, "size": 14, "color": AMBER})]])
     code = ["git clone https://" + REPO, "cd xr", "pip install -r", "  requirements-inference.txt",
             "python main.py --videos clips/", "  --out results/predictions.jsonl", "", "# or, no network:",
             "docker build -t palmcast .", "docker run --network none \\", "  -v $PWD/clips:/clips palmcast \\",
-            "  --videos /clips", "", "# Android app:", "cd android && ./gradlew assembleDebug"]
+            "  --videos /clips", "", "# live pipeline, laptop webcam:", "pip install -r requirements-live.txt",
+            "python live.py          # or --check"]
     text(sl, 6.05, 1.5, 3.45, 3.8, [[(c, {"font": "Courier New", "size": 9.5, "color": TEXT if not c.startswith("#") else MUTED})]
                                     for c in code], space_after=0, name="Setup commands")
 
@@ -501,7 +504,7 @@ def build(template, out, team, college, members):
                                    ("Running sentence", "Words join up; a pause adds the full stop", MINT),
                                    ("Offline voice", "Each word spoken with an installed voice", AMBER),
                                    ("Low light", "Torch, or a white ring light on the screen", CYAN),
-                                   ("Too close", "\"Move the phone back\" instead of guessing", MINT),
+                                   ("Jitter filter", "One Euro filter: 0 false words under webcam jitter", MINT),
                                    ("Measurement mode", "10-min run logs latency, power, heat", AMBER)]):
         x = 5.5 + (i % 2) * 2.05
         y = 1.1 + (i // 2) * 1.43

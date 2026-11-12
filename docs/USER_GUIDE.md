@@ -10,7 +10,44 @@
 4. Open **Palmcast** and tap **Allow** for the camera. That is the only
    permission it asks for. It never uses the internet.
 
-Needs a 64-bit Android phone with Android 8 or newer.
+Needs an Android phone with Android 8 or newer. Almost every phone since 2019
+is 64-bit (`Palmcast-arm64.apk`); for an older 32-bit phone use
+[`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk).
+
+### On an OPPO phone (ColorOS), also Realme and OnePlus
+
+ColorOS adds a few extra checks. All of them are one tap:
+
+1. Download the APK in Chrome. Open it from the Chrome download bar or from
+   **Files > Downloads**.
+2. **"For your security, installing unknown apps is not allowed"** - tap
+   **Settings**, switch on **Allow from this source** for Chrome (or Files),
+   then press back.
+3. **Security check / "Installing apps from unknown sources may harm your
+   phone"** - tap **Install anyway**. If it asks for your OPPO account
+   password, that is ColorOS's own check: enter it, or choose
+   **Skip/Install without verification** where offered.
+4. Open Palmcast, allow the camera.
+5. **Voice:** ColorOS phones often ship without an English offline voice. If
+   the words are not spoken: install **Speech Services by Google** from the
+   Play Store, then **Settings > Additional settings > Languages & input >
+   Text-to-speech output**, choose Speech Services by Google, tap the gear >
+   **Install voice data > English (United States)**. The app shows a hint
+   when no offline voice is installed.
+6. **Measuring power (Test > Measure):** ColorOS stops apps in the background
+   to save battery. Keep Palmcast on screen during the 10-minute run, and in
+   **Settings > Battery > App battery management > Palmcast** choose
+   **Allow background activity** so the run is not cut short.
+
+Installing from a computer instead (USB cable):
+
+1. **Settings > About device > Version**, tap **Build number** 7 times.
+2. **Settings > Additional settings > Developer options**: turn on **USB
+   debugging**, and also **Install via USB** if it is listed. If installing
+   fails with `INSTALL_FAILED_USER_RESTRICTED`, turn on **Disable permission
+   monitoring** in the same menu (ColorOS only), then try again.
+3. Plug in, accept the "Allow USB debugging?" prompt on the phone, then:
+   `adb install -r Palmcast-arm64.apk`
 
 ## 2. Set up
 
@@ -111,3 +148,34 @@ This fills the latency, power and thermal rows of `results/results.csv`.
 | No word appears | sign a bit bigger and slower, start and end with hands down, or tap **Recognise** |
 | Wrong word | check it is one of the 100 words; sign facing the camera |
 | App closes on start | reinstall the latest APK; tell us the phone model |
+
+## 8. Check the live pipeline on a laptop
+
+The phone is the product; the laptop is for checking it. `live.py` runs the
+same pipeline as the app (Holistic landmarks → landmark filter → sign
+segmenter → sign gate → INT8 model → caption rule → sentence → offline voice)
+on a laptop webcam, so judges and teammates can try it without a phone.
+Python 3.11, Windows, macOS or Linux:
+
+```bash
+git clone https://github.com/yugesh1111/xr && cd xr
+python3.11 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements-live.txt
+python live.py --check               # 1 minute, no camera: 30-clip sentence test, prints the score
+python live.py                       # webcam, live; Q quits
+```
+
+- **No camera / no signer?** `python live.py --demo` plays the 10 test
+  sentences (signers the model never saw) through the live window.
+  `python live.py --video some_clip.mp4` does the same for any video.
+- **Keys:** Q quit, C clear the sentence, V voice on/off, F landmark filter
+  on/off (to see the jitter it removes), Space end the sentence now.
+- **macOS:** the first run asks for camera access for your terminal app.
+  If the window says it cannot open the camera, allow it in **System Settings
+  > Privacy & Security > Camera** and run again. Another camera: `--camera 1`.
+- **Signing tips:** sit so your head, chest and both hands are in view, sign
+  one word, pause half a second, sign the next. A 4-second pause ends the
+  sentence.
+- Use a fresh virtual environment: this needs `opencv-python` (with windows),
+  which clashes with the headless OpenCV in `requirements-inference.txt`.

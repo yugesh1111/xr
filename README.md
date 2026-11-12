@@ -14,7 +14,7 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 ![Python](https://img.shields.io/badge/python-3.11-555)
 
 **[Download the app](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)** ·
-**[Demo video](submission/Palmcast_demo_narrated.mp4)** ·
+**[Demo video](submission/Palmcast_walkthrough.mp4)** ·
 **[Slides](submission/Palmcast_XR_Hackathon_Track02.pptx)** ·
 **[User guide](docs/USER_GUIDE.md)** ·
 **[Technical record](docs/DETAILS.md)**
@@ -37,11 +37,17 @@ device.
 | Hands tracked live; **help** at 54%, then a grey guess | A clip from aslbricks.org read by the app: **basketball 81%** | Words build into sentences: **20 of 30** right |
 
 All three are screen recordings of the release APK on the Android emulator
-(the laptop camera is the phone camera). Full videos:
-[2:55 with narration](submission/Palmcast_demo_narrated.mp4) ·
-[6:47 detailed, with narration](submission/Palmcast_demo_full_narrated.mp4) ·
-silent versions for your own voice-over next to them ·
-[speech script](submission/SPEECH_SCRIPT.md).
+(the laptop camera is the phone camera).
+**[Walkthrough video, 2:47](submission/Palmcast_walkthrough.mp4)**: real
+screen recordings only - live camera, sentences forming, a web video uploaded
+into the app, the sentence test, the built-in test and `predict()`
+([speech script](submission/SPEECH_SCRIPT.md)). Earlier cuts with title cards:
+[2:55](submission/Palmcast_demo_narrated.mp4), [6:47](submission/Palmcast_demo_full_narrated.mp4).
+
+![Live pipeline on a laptop: woman drink hot](docs/media/laptop_live.png)
+
+*The same pipeline on a laptop (`python live.py --demo`): test signers never
+seen in training, words joining into "Woman drink hot." as they are signed.*
 
 ## Results
 
@@ -81,7 +87,7 @@ Targets from the Track 02 brief; the file the judges read is
 
 1. **Capture** - CameraX at 720p; low-light check switches on the torch or a white ring on the screen.
 2. **Perception** - MediaPipe Holistic finds 88 body, hand and face points; blurry frames are sharpened first.
-3. **Sign detection** - a sign starts when a hand appears and ends after a 0.5 s pause; it only counts if the wrist or fingers really moved (resting hands never trigger it).
+3. **Sign detection** - a One Euro filter first removes tracker jitter from every landmark (strong smoothing on still points, almost none on fast ones). A sign starts when a hand appears and ends after a 0.5 s pause; it only counts if the wrist or fingers really moved (resting hands never trigger it).
 4. **Understanding** - 239 body-relative features per frame, 32 frames per sign. A 0.23 MB **sign gate** asks "is this a sign at all?", then the 6.2 MB INT8 **word model** (4 networks averaged) picks one of 100 words.
 5. **Output** - sure words become captions and are spoken; weaker ones show as a grey `word?` with two alternatives; words join a running sentence. **Reply** turns the other person's speech into captions.
 
@@ -134,20 +140,27 @@ makes it indifferent to background, clothing and skin tone.
 | Built-in test, 10 official clips on the phone | **9 of 10**, identical to Python |
 | Live signing to the camera | **help** at 54% |
 | Hands resting / fidgeting (600 simulated streams) | **0** false words |
+| Landmark filter, with webcam-like tracker jitter (0.4-0.8% of the image) | false words from resting hands 140/600 → **0/600**; 3-sign sentences right and in order 32.8% → **49.4%**; on clean dataset video it costs ~1 point |
+| Same pipeline on a laptop, `python live.py --check` (30 clips, 10 sentences) | **19 of 30** (filter on), 20 of 30 (off); landmarks 10 ms per frame on an M-series CPU |
 | Phone at arm's length / very close / signer at ½ and ⅓ size | 71.9% / 40.7% (app asks to move back) / 76.9% / 77.2% |
 | Kotlin features vs Python | max difference ~1e-6 |
-| Unit tests: `pytest` (16), Android `FeaturesTest`, `EnhanceTest`, `SegmenterTest`, `SentenceTest` | all pass |
+| Kotlin landmark filter vs Python | max difference 2.4e-7 |
+| Unit tests: `pytest` (16), Android `FeaturesTest`, `EnhanceTest`, `SegmenterTest`, `SentenceTest`, `LandmarkFilterTest` | all pass |
 
 **Honest notes.** The training recipe was chosen after seeing earlier held-out
 results, so 78.1% is slightly optimistic. WLASL has only ~10 clips per word, so
 one new person can score well above or below the average. Latency and thermal
 drift were measured on a laptop CPU; power needs a phone.
 
-## Run it - three ways
+## Run it
 
-**1. On a phone.** Download
-[`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk),
-install it (any 64-bit Android 8+ phone) and follow the [user guide](docs/USER_GUIDE.md).
+**1. On a phone (the product).** Download
+[`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)
+(older 32-bit phones: [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk)),
+install it (Android 8+) and follow the [user guide](docs/USER_GUIDE.md).
+**OPPO / Realme / OnePlus (ColorOS):** allow installs from Chrome or Files,
+tap *Install anyway* at the security check, and install an offline English
+voice for speech - [step by step](docs/USER_GUIDE.md#on-an-oppo-phone-coloros-also-realme-and-oneplus).
 
 **2. Python** (the brief's `predict()`, Python 3.11):
 
@@ -169,6 +182,16 @@ docker build -t palmcast .
 docker run --rm --network none -v "$PWD/clips:/clips" -v "$PWD/out:/out" palmcast --videos /clips --out /out/predictions.jsonl
 ```
 
+**4. Check the live pipeline on a laptop webcam** (same code path as the app, Python 3.11, fresh venv):
+
+```bash
+pip install -r requirements-live.txt
+python live.py --check     # no camera: 30-clip sentence test, prints the score (~1 min)
+python live.py             # webcam, real time; Q quits.  --demo plays 10 test sentences
+```
+
+Details and troubleshooting: [user guide, section 8](docs/USER_GUIDE.md#8-check-the-live-pipeline-on-a-laptop).
+
 Build the app yourself: `cd android && ./gradlew assembleDebug`.
 Submission bundle in the organisers' layout: `python scripts/make_submission.py --team WeCode`.
 Training from scratch and every experiment: [docs/DETAILS.md](docs/DETAILS.md).
@@ -177,6 +200,8 @@ Training from scratch and every experiment: [docs/DETAILS.md](docs/DETAILS.md).
 
 ```
 main.py           predict(video) -> dict, batch predictions
+live.py           the live pipeline on a laptop webcam (check / demo)
+samples/          30 short test clips for live.py --check / --demo
 echogesture/      landmarks, features, model, augmentation (Python)
 android/          the app: Kotlin, CameraX, MediaPipe, ONNX Runtime
 models/           INT8 word model, sign gate, word list

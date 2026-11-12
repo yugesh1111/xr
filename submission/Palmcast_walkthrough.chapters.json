@@ -1,0 +1,38 @@
+[
+ {
+  "step": 1,
+  "title": "Live camera, on the phone",
+  "start": 0.0,
+  "end": 14.0
+ },
+ {
+  "step": 2,
+  "title": "Sentences building as they are signed",
+  "start": 14.0,
+  "end": 58.0
+ },
+ {
+  "step": 3,
+  "title": "A video from the web, uploaded into the app",
+  "start": 58.0,
+  "end": 89.27
+ },
+ {
+  "step": 4,
+  "title": "Sentence test on the phone",
+  "start": 89.27,
+  "end": 126.4
+ },
+ {
+  "step": 5,
+  "title": "Built-in test: same answers as the computer",
+  "start": 126.4,
+  "end": 150.17
+ },
+ {
+  "step": 6,
+  "title": "predict() for the evaluators, offline",
+  "start": 150.17,
+  "end": 167.0
+ }
+]

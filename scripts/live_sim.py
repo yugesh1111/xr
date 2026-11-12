@@ -22,90 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from echogesture import layout as L  # noqa: E402
 from echogesture.inputs import make_input  # noqa: E402
 
-TIPS = [4, 8, 12, 16, 20]
-
-
-class Segmenter:
-    """Python port of android/.../core/Segmenter.kt."""
-
-    def __init__(self, old=False, start=2, end_missing_ms=500, end_still_ms=500, still_speed=0.1, max_ms=3500, pre_roll=5,
-                 min_wrist=0.2, min_finger=0.25):
-        self.old = old
-        self.start, self.end_missing_ms, self.end_still_ms = start, end_missing_ms, end_still_ms
-        self.still_speed, self.max_ms, self.pre_roll = still_speed, max_ms, pre_roll  # still_speed: image heights / s
-        self.min_frames = 10 if old else 5
-        self.min_wrist, self.min_finger = min_wrist, min_finger
-        self.signing = False
-        self.hist, self.seg, self.seen, self.last, self.last_t = [], [], 0, None, None
-
-    @staticmethod
-    def _hand(f, b):
-        return not np.isnan(f[b.start, 0])
-
-    def _speed(self, f):
-        b = next((b for b in (L.RHAND, L.LHAND) if self._hand(f, b)), None)
-        prev = self.last
-        if b is None:
-            self.last = None
-            return 0.0
-        self.last = f[b.start, :2].copy()
-        return 0.0 if prev is None else float(np.hypot(*(self.last - prev)))
-
-    def push(self, f, t_ms):
-        hand = self._hand(f, L.LHAND) or self._hand(f, L.RHAND)
-        dt = 40.0 if self.last_t is None else min(max(t_ms - self.last_t, 1.0), 500.0)
-        self.last_t = t_ms
-        dist = self._speed(f)
-        sp = dist * 1000.0 / dt
-        if not self.signing:
-            self.hist = (self.hist + [f])[-(self.pre_roll + self.start):]
-            self.seen = self.seen + 1 if hand else 0
-            if self.seen >= self.start:
-                self.signing, self.seg = True, list(self.hist)
-                self.miss = self.still = 0
-                self.moved, self.travel, self.t0 = False, 0.0, t_ms
-            return None
-        self.seg.append(f)
-        self.travel += dist
-        self.miss = 0 if hand else self.miss + dt
-        self.moved |= sp > self.still_speed * 3
-        self.still = self.still + dt if hand and sp < self.still_speed else 0
-        if self.miss >= self.end_missing_ms or (self.moved and self.still >= self.end_still_ms) or t_ms - self.t0 >= self.max_ms:
-            self.signing, self.hist, self.seen = False, [], 0
-            out, self.seg = np.stack(self.seg), []
-            return out if (self.old or t_ms - self.t0 >= 400) and self.is_sign(out) else None
-        return None
-
-    def is_sign(self, x):
-        if len(x) < self.min_frames:
-            return False
-        fh = face_height(x)
-        if self.old:
-            return self.moved and self.travel / fh >= 0.8
-        wrist, finger = movement_ranges(x)
-        return wrist / fh >= self.min_wrist or finger / fh >= self.min_finger
-
-
-def face_height(x):
-    d = np.linalg.norm(x[:, L.FACE.start + L.F_FOREHEAD, :2] - x[:, L.FACE.start + L.F_CHIN, :2], axis=1)
-    d = d[~np.isnan(d)]
-    return float(np.median(d)) if len(d) else 0.25
-
-
-def movement_ranges(x):
-    """Largest 5-95% range of a wrist, and of a fingertip relative to its wrist."""
-    def span(p):
-        e = np.percentile(p, 95, 0) - np.percentile(p, 5, 0)
-        return np.linalg.norm(e, axis=-1)
-    wrist = finger = 0.0
-    for b in (L.RHAND, L.LHAND):
-        ok = ~np.isnan(x[:, b.start, 0])
-        if ok.sum() < 3:
-            continue
-        h = x[ok][:, b.start:b.start + 21, :2]
-        wrist = max(wrist, float(span(h[:, 0])))
-        finger = max(finger, float(span(h[:, TIPS] - h[:, :1]).max()))
-    return wrist, finger
+from echogesture.live import LandmarkFilter, Segmenter  # noqa: E402
 
 
 def main():
@@ -116,6 +33,9 @@ def main():
     ap.add_argument("--no-gate", action="store_true", help="ignore models/gate_int8.onnx")
     ap.add_argument("--seg", default="{}", help="JSON overrides for the Segmenter, for tuning")
     ap.add_argument("--sentences", type=int, default=0, help="also test N three-sign sequences without dropping the hands")
+    ap.add_argument("--jitter", type=float, default=0.0,
+                    help="add live-tracker jitter: Gaussian noise of this many image heights per point and frame")
+    ap.add_argument("--filter", default="", help='One Euro filter on the landmarks, JSON params, e.g. \'{}\' for defaults')
     args = ap.parse_args()
 
     import onnxruntime as ort
@@ -146,6 +66,7 @@ def main():
     m = pd.read_csv("data/wlasl/manifest.csv", dtype={"video_id": str})
     m = m[m.split == "test"]
     rng = np.random.default_rng(0)
+    jrng = np.random.default_rng(7)
     n = cut = on_screen = right = idle_n = idle_words = 0
     for _, r in m.iterrows():
         p = Path("data/wlasl/landmarks") / f"{r.video_id}.npz"
@@ -155,7 +76,7 @@ def main():
         rest = x[:1].copy()
         rest[:, L.LHAND] = np.nan
         rest[:, L.RHAND] = np.nan
-        stream = np.concatenate([np.repeat(rest, 10, 0), x, np.repeat(rest, 12, 0)])
+        stream = prepare(args, np.concatenate([np.repeat(rest, 10, 0), x, np.repeat(rest, 12, 0)]), jrng)
         seg = Segmenter(old=args.old, **json.loads(args.seg))
         dt = 40.0 * args.every
         segs = [s for s in (seg.push(f, i * dt) for i, f in enumerate(stream)) if s is not None]
@@ -173,16 +94,29 @@ def main():
             for noise, sway in [(0.002, 0.0), (0.004, 0.0), (0.002, 0.003)]:
                 s = f0[None] + rng.normal(0, noise, (96,) + f0.shape).astype(np.float32)
                 s[..., 0] += sway * np.sin(np.arange(96)[:, None] / 6.0)
+                s = prepare(args, s, jrng)
                 seg = Segmenter(old=args.old, **json.loads(args.seg))
                 idle_n += 1
                 idle_words += sum(shown(probs(o)) for o in (seg.push(f, i * dt) for i, f in enumerate(s)) if o is not None)
-    print(f"~{25 / args.every:.0f} fps, {'old' if args.old else 'current'} rule, {n} test signs")
+    print(f"~{25 / args.every:.0f} fps, {'old' if args.old else 'current'} rule, {n} test signs, "
+          f"jitter {args.jitter}, filter {args.filter or 'off'}")
     print(f"  sign found by the segmenter : {100 * cut / n:.1f}%")
     print(f"  word shown                  : {100 * on_screen / n:.1f}%  (right when shown {100 * right / max(on_screen, 1):.1f}%)")
     print(f"  correct word on screen      : {100 * right / n:.1f}%")
     print(f"  idle streams with a word    : {idle_words}/{idle_n}")
     if args.sentences:
         sentences(args, m, probs, shown, meta["vocab"])
+
+
+def prepare(args, stream, rng):
+    """What the tracker would hand the app: jitter added, then the optional filter."""
+    if args.jitter:
+        stream = stream + rng.normal(0, args.jitter, stream.shape).astype(np.float32)
+    if args.filter:
+        f = LandmarkFilter(**json.loads(args.filter))
+        dt = 40.0 * args.every
+        stream = np.stack([f(x, i * dt) for i, x in enumerate(stream)])
+    return stream
 
 
 def sentences(args, m, probs, shown, vocab):
@@ -211,7 +145,7 @@ def sentences(args, m, probs, shown, vocab):
         rest = parts[0][:1].copy()
         rest[:, L.LHAND] = np.nan
         rest[:, L.RHAND] = np.nan
-        stream = np.concatenate([np.repeat(rest, 8, 0)] + parts + [np.repeat(rest, 20, 0)])
+        stream = prepare(args, np.concatenate([np.repeat(rest, 8, 0)] + parts + [np.repeat(rest, 20, 0)]), rng)
         seg = Segmenter(old=args.old, **json.loads(args.seg))
         words = []
         for i, f in enumerate(stream):

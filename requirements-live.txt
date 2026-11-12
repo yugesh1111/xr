@@ -1,0 +1,7 @@
+# Laptop real-time app (live.py). Use a fresh virtual environment:
+# this needs opencv-python (with windows), not the headless build in requirements-inference.txt.
+numpy>=1.26
+opencv-python>=4.9
+mediapipe>=0.10.14
+onnxruntime>=1.18
+pillow>=10
