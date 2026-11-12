@@ -221,9 +221,9 @@ def main():
         def add(p):
             parts.append(p)
 
-        card_title(t / "title.png"); still(t / "title.png", 6 if full else 5, t / "00.mp4"); add(t / "00.mp4")
+        card_title(t / "title.png"); still(t / "title.png", 15 if full else 8.5, t / "00.mp4"); add(t / "00.mp4")
         if full:
-            card_install(t / "install.png", rec / "launcher.png"); still(t / "install.png", 9, t / "01.mp4"); add(t / "01.mp4")
+            card_install(t / "install.png", rec / "launcher.png"); still(t / "install.png", 18, t / "01.mp4"); add(t / "01.mp4")
 
         panel(t / "live.png", "2 · Live camera", "Signing \"help\" to the phone", [
             "Real signing in front of the camera (the laptop webcam is the phone camera here).",
@@ -267,10 +267,24 @@ def main():
         wide_seg(rec / "terminal.mp4", t / "term.png", t / "06.mp4", 0.8 if full else 1.0)
         add(t / "06.mp4")
 
-        card_requirements(t / "req.png"); still(t / "req.png", 14 if full else 9, t / "07.mp4"); add(t / "07.mp4")
-        card_results(t / "res.png"); still(t / "res.png", 12 if full else 8, t / "08.mp4"); add(t / "08.mp4")
-        card_end(t / "end.png"); still(t / "end.png", 5, t / "09.mp4"); add(t / "09.mp4")
+        card_requirements(t / "req.png"); still(t / "req.png", 19 if full else 8, t / "07.mp4"); add(t / "07.mp4")
+        card_results(t / "res.png"); still(t / "res.png", 17 if full else 7.5, t / "08.mp4"); add(t / "08.mp4")
+        card_end(t / "end.png"); still(t / "end.png", 8 if full else 4.5, t / "09.mp4"); add(t / "09.mp4")
 
+        # chapter timings for the narration (submission/narrate.py)
+        names = {"00": "title", "01": "install", "02": "live", "03": "online", "04": "builtin", "05": "sentence",
+                 "06": "terminal", "07": "requirements", "08": "results", "09": "end"}
+        chapters, t0 = [], 0.0
+        for p in parts:
+            key = names[p.stem[:2]]
+            d_ = dur(p)
+            if chapters and chapters[-1]["chapter"] == key:
+                chapters[-1]["end"] = round(t0 + d_, 2)
+            else:
+                chapters.append({"chapter": key, "start": round(t0, 2), "end": round(t0 + d_, 2)})
+            t0 += d_
+        import json as _json
+        Path(out).with_suffix(".chapters.json").write_text(_json.dumps(chapters, indent=1))
         (t / "list.txt").write_text("".join(f"file '{p}'\n" for p in parts))
         run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(t / "list.txt"),
              "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out])

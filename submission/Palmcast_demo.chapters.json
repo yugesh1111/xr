@@ -1,0 +1,47 @@
+[
+ {
+  "chapter": "title",
+  "start": 0.0,
+  "end": 8.5
+ },
+ {
+  "chapter": "live",
+  "start": 8.5,
+  "end": 24.47
+ },
+ {
+  "chapter": "online",
+  "start": 24.47,
+  "end": 71.33
+ },
+ {
+  "chapter": "builtin",
+  "start": 71.33,
+  "end": 103.0
+ },
+ {
+  "chapter": "sentence",
+  "start": 103.0,
+  "end": 139.4
+ },
+ {
+  "chapter": "terminal",
+  "start": 139.4,
+  "end": 154.67
+ },
+ {
+  "chapter": "requirements",
+  "start": 154.67,
+  "end": 162.67
+ },
+ {
+  "chapter": "results",
+  "start": 162.67,
+  "end": 170.17
+ },
+ {
+  "chapter": "end",
+  "start": 170.17,
+  "end": 174.67
+ }
+]

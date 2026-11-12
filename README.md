@@ -1,158 +1,155 @@
+<div align="center">
+
 # Palmcast
 
-Sign language to text, live, on a phone, with no internet.
+**Sign language to text and speech, live, on the phone. No internet. No cloud.**
 
-Point the phone camera at someone signing an American Sign Language (ASL)
-word and the word appears on screen (and can be spoken aloud). Everything runs
-on the phone itself: no server, no upload, no network permission.
+Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - *EchoGesture: Sign Language Prediction on Edge Device*
 
-Built for the **Samsung PRISM XR Hackathon 2026, Track 02 - "EchoGesture: Sign
-Language Prediction on Edge Device"**.
+![Top-1 on unseen signers](https://img.shields.io/badge/top--1%20unseen%20signers-78.1%25-00E5B0)
+![Model](https://img.shields.io/badge/model-6.2%20MB%20INT8-00B4D8)
+![Latency](https://img.shields.io/badge/latency%20p95-14%20ms%20per%20frame-00B4D8)
+![Robustness](https://img.shields.io/badge/robustness%20drop-4.6%20pt-00E5B0)
+![Offline](https://img.shields.io/badge/network-none-F59E0B)
+![Python](https://img.shields.io/badge/python-3.11-555)
 
-| | |
-|---|---|
-| **Android app (APK)** | [Palmcast-arm64.apk](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) - any 64-bit Android phone, Android 8+ |
-| **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
-| **Demo video** | [submission/Palmcast_demo.mp4](submission/Palmcast_demo.mp4) (2:53) and the detailed [Palmcast_demo_full.mp4](submission/Palmcast_demo_full.mp4) (6:16): live signing, 9 online ASL videos uploaded into the app, built-in test, 30-clip sentence test, Python `predict()` |
-| **Architecture** | [device](submission/diagrams/architecture_device.png), [training and evaluation](submission/diagrams/architecture_training.png), [per-frame flowchart](submission/diagrams/flowchart.png) (draw.io sources next to them) |
-| **Presentation** | [submission/Palmcast_XR_Hackathon_Track02.pptx](submission/Palmcast_XR_Hackathon_Track02.pptx) |
-| **Submission package** | `python scripts/make_submission.py` builds `<team>.zip` (src/ + results/) in the organisers' layout |
-| **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
+**[Download the app](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)** ·
+**[Demo video](submission/Palmcast_demo_narrated.mp4)** ·
+**[Slides](submission/Palmcast_XR_Hackathon_Track02.pptx)** ·
+**[User guide](docs/USER_GUIDE.md)** ·
+**[Technical record](docs/DETAILS.md)**
 
-## Why
+</div>
 
-Most deaf and hard-of-hearing people sign, and most hearing people don't.
-Cloud translation needs a connection and sends video of people to a server.
-Palmcast does it on the device: private, works offline, and fast enough to
-keep up with a conversation one word at a time.
+---
+
+Point a phone at someone signing American Sign Language and their words appear
+on screen, one sign at a time, and can be spoken aloud. The hearing person can
+answer by voice, and their words appear as captions. Everything runs on the
+phone: the app has no internet permission, so video of people never leaves the
+device.
 
 ## See it work
 
-| The app on Android (built-in test clips) | What the model sees, and what it says |
-|---|---|
-| ![App running its built-in test](docs/media/app_test.gif) | ![Landmarks and predicted word](docs/media/pipeline.gif) |
-| 10 clips from the official test set, run through the full on-phone pipeline: 9/10 correct, same answers as the Python version. | Real test clips drawn as the body and hand points the model uses (no video, so no faces). The caption is what the shipped model predicts. |
+| Live: signing "help" | Online ASL video uploaded into the app | 30-clip sentence test |
+|:---:|:---:|:---:|
+| ![Live signing](docs/media/live_help.gif) | ![Uploaded clip](docs/media/online_upload.gif) | ![Sentence test](docs/media/sentence_test.gif) |
+| Hands tracked live; **help** at 54%, then a grey guess | A clip from aslbricks.org read by the app: **basketball 81%** | Words build into sentences: **20 of 30** right |
 
-## What it does
+All three are screen recordings of the release APK on the Android emulator
+(the laptop camera is the phone camera). Full videos:
+[2:55 with narration](submission/Palmcast_demo_narrated.mp4) ·
+[6:47 detailed, with narration](submission/Palmcast_demo_full_narrated.mp4) ·
+silent versions for your own voice-over next to them ·
+[speech script](submission/SPEECH_SCRIPT.md).
 
-- **Live captions** from the camera. A word is shown as a caption when the
-  model is sure (probability at least 45% and 20 points ahead of the next
-  word); these are right about 95% of the time. Weaker guesses appear in grey
-  as "word?" with the next two candidates. Hands resting in view never produce
-  a word.
-- **Running sentence.** Sign word after word, pausing about half a second
-  between signs (no need to drop your hands). Each word joins the sentence at
-  the bottom of the screen; a 4-second pause ends it with a full stop. Tap the
-  sentence to clear it.
-- **Near or far.** Works with the phone at arm's length (shoulders out of
-  frame) or with the signer small in the frame. Too close: it tells you to move
-  back.
-- **Low light.** Turns on the torch (back camera) or a white ring light on the
-  screen (front camera) when the scene is dark.
-- **No word when nothing is signed.** A second, tiny model (the sign gate,
-  0.23 MB INT8) decides "sign or not a sign" before any word is shown, so
-  scratching your nose or resting a hand on your chin stays silent.
-- **Voice.** Optional offline text-to-speech of each word.
-- **Two-way conversation.** Tap **Reply** and the hearing person answers out
-  loud; their words appear in the same conversation, so the deaf user reads
-  them. Signed lines get a mint marker, spoken ones a blue marker. Uses the
-  phone's on-device speech recognition (Android 12+).
-- **Test mode.** Run the built-in test clips or any video on the phone.
-- **Measurement run** (Test menu). Logs latency, power and temperature for 10 minutes and saves
-  a `results_device.csv`.
+## Results
 
-Vocabulary: the 100 words of WLASL100, the list the organisers asked for.
+Targets from the Track 02 brief; the file the judges read is
+[`results/results.csv`](results/results.csv).
+
+| Metric | Target | Palmcast | |
+|---|---|---|:---:|
+| Top-1 accuracy on **people the model never saw** | ≥ 70% | **78.1%** (official test set: 81.6%) | ✅ |
+| Model size, INT8 | ≤ 20 MB | **6.2 MB** (+ 0.23 MB sign gate) | ✅ |
+| Latency p95 per camera frame | ≤ 50 ms | **14.0 ms**, word model 5.4 ms per sign | ✅ * |
+| Accuracy drop: dark, blur, tilt, low resolution, occlusion | ≤ 5 pt | **4.6 pt** | ✅ |
+| Thermal drift over 10 minutes | ≤ 20% | **5.3%** | ✅ * |
+| Average power | ≤ 500 mW | needs a phone run | ⏳ |
+
+\* 10-minute sustained run of the full pipeline on a laptop CPU (Apple M5,
+[`scripts/sustained_run.py`](scripts/sustained_run.py)), not a phone. The app's
+**Test → Measure** mode records the same numbers, and power, on a phone.
+
+## What the track asks for, and where it is
+
+| Track 02 asks for | Palmcast | Evidence |
+|---|---|---|
+| Fully on-device, exocentric: phone camera → text or audio | Android app, back camera by default; captions + offline voice | APK, demo video |
+| Moving heads, angled signers, low light | Body-relative features, view augmentation, torch / screen ring light | robustness 4.6 pt |
+| On-device privacy, zero cloud streaming | No `INTERNET` permission; nothing stored or sent | [`AndroidManifest.xml`](android/app/src/main/AndroidManifest.xml) |
+| Pose-invariant 3D hand features | Hand shape in the hand's own frame, location in the body's frame | [`features.py`](echogesture/features.py), `Features.kt` |
+| Quantized TFLite / ONNX model, < 20 MB INT8 | ONNX INT8, static per-channel | [`models/`](models), [`export_onnx.py`](scripts/export_onnx.py) |
+| Captions or audio for two-way conversation | Captions, voice, **Reply** turns speech into captions | demo video |
+| `predict()`, `predictions.jsonl`, `results.csv` | [`main.py`](main.py); 201 official test clips; 5 of 6 PASS | [`results/`](results) |
+| Occlusions and HUD clarity | Occlusion test −4.0 pt; confidence bar, hints, conversation view | [`robustness_video_enhanced.json`](results/robustness_video_enhanced.json) |
+| Python 3.11, `requirements.txt`, zip layout | Checked on 3.11.15; Docker on 3.11 | [`submission/`](submission) |
 
 ## How it works
 
 ![On-device architecture](submission/diagrams/architecture_device.png)
 
-```
-camera frame -> MediaPipe Holistic -> 88 body, hand and face points
-             -> sign start/end detection (hand movement)
-             -> features (hand shape, orientation, location vs the body, motion, face)
-             -> INT8 neural network -> word + confidence -> caption / speech
-```
+1. **Capture** - CameraX at 720p; low-light check switches on the torch or a white ring on the screen.
+2. **Perception** - MediaPipe Holistic finds 88 body, hand and face points; blurry frames are sharpened first.
+3. **Sign detection** - a sign starts when a hand appears and ends after a 0.5 s pause; it only counts if the wrist or fingers really moved (resting hands never trigger it).
+4. **Understanding** - 239 body-relative features per frame, 32 frames per sign. A 0.23 MB **sign gate** asks "is this a sign at all?", then the 6.2 MB INT8 **word model** (4 networks averaged) picks one of 100 words.
+5. **Output** - sure words become captions and are spoken; weaker ones show as a grey `word?` with two alternatives; words join a running sentence. **Reply** turns the other person's speech into captions.
 
-Working from body points instead of raw pixels keeps the model small and
-makes it less sensitive to background, clothing and lighting.
+Working from body points instead of pixels keeps the model small and fast, and
+makes it indifferent to background, clothing and skin tone.
 
-## The model
+<details>
+<summary><b>Training and evaluation pipeline</b></summary>
 
-| | |
+![Training and evaluation](submission/diagrams/architecture_training.png)
+
+- **Data:** WLASL100 - 1,466 clips of 100 words, split by signer (1,044 / 221 / 201), plus 94,477 Kaggle ASL Signs phone clips for pre-training.
+- **Four networks**, each 1.28 M parameters (per-group projections → quality gate → 4 depthwise-conv + 2 attention blocks): base, near/far (phone close or far away), degraded video, and Kaggle-pre-trained.
+- **Augmentation:** camera angle, hand size, speed, one hand lost, dropped frames, tracker noise.
+- **Export:** PyTorch → ONNX → static INT8 (QDQ, per-channel), checked against FP32.
+
+</details>
+
+<details>
+<summary><b>Per-frame decision flow and edge cases</b></summary>
+
+![Per-frame flowchart](submission/diagrams/flowchart.png)
+
+| Edge case | What the app does |
 |---|---|
-| Type | Ensemble of 4 networks (1D convolutions + attention), averaged |
-| Parameters | 5.1 M (1.28 M per network) |
-| File | `models/model_int8.onnx`, INT8 ONNX, **6.2 MB** |
-| Input | 32 time steps of 239 features computed from the landmarks |
-| Output | 100 words |
-| Runs on | ONNX Runtime (Android and desktop) |
+| No hands in view | Listening; every 2nd frame skipped to save power |
+| Hands resting, fidgeting | Movement-range check + sign gate → no word (0 of 600 idle runs) |
+| Unsure sign | Grey `word?` + 2 alternatives, not spoken |
+| Sign outside the 100 words | Sign gate / low confidence → nothing |
+| Too dark | Torch or screen ring light, and a hint |
+| Blurry frame | Adaptive sharpening before tracking |
+| Too close | "Move the phone back" hint |
+| Shoulders out of frame | Virtual shoulders placed from the face |
+| Signer far away | Trained on far copies: 77% at ⅓ size |
+| Left-handed signer | Mirrored to the dominant hand |
+| Something passes in front | Tested: −4.0 points |
+| No camera / offline voice / speech pack | Falls back and tells the user |
 
-The four networks differ in what they were trained on:
-
-1. **Base** - WLASL training clips.
-2. **Near/far** - the same plus copies with the phone close (shoulders cut off) or far away.
-3. **Degraded** - plus copies from darkened, blurred and low-resolution video.
-4. **Pre-trained** - first trained on 94,477 phone recordings from Kaggle's
-   ASL Signs dataset (250 signs), then on WLASL.
-
-Data: 1,466 WLASL100 clips (1,044 train, 221 validation, 201 test), split so
-that validation signers never appear in training.
-
-## Results
-
-Targets are from the hackathon brief.
-
-| Metric | Target | Measured | |
-|---|---|---|---|
-| Top-1 accuracy, **people the model never saw** | >= 70% | **78.1%** | PASS |
-| Model size | <= 20 MB | **6.2 MB** | PASS |
-| Accuracy drop under dark, blur, tilt, low resolution, occlusion | <= 5 points | **4.6** | PASS |
-| Latency per frame, p95 | <= 50 ms | **14.0 ms** (word model 5.4 ms per sign) | PASS* |
-| Average power (phone) | <= 500 mW | needs a phone run | - |
-| Thermal drift over 10 min | <= 20% | **5.3%** | PASS* |
-
-\* 10-minute sustained run of the full pipeline on a laptop CPU (Apple M5, `scripts/sustained_run.py`), not a phone. The app's measurement run (Test menu) records the same numbers and power on a phone.
-
-The file the judges read: [`results/results.csv`](results/results.csv).
-Predictions for every official test clip: [`results/predictions.jsonl`](results/predictions.jsonl).
+</details>
 
 ## What we tested
 
-| Test | How | Result |
-|---|---|---|
-| New people | 3 groups of signers removed from all training, models retrained, scored once (622 clips) | 78.1% top-1, 93.1% top-5 |
-| Official WLASL100 test clips | 201 clips through `main.py` | 164/201 = 81.6% |
-| Bad video | 422 clips darkened, blurred, tilted 15 degrees, shrunk, and with an object passing in front of the signer, then re-run through MediaPipe | drop 4.6 points (dark -5.0, blur -7.8, tilt +1.0, low res -7.3, occlusion -4.0) |
-| Noisy landmarks | jitter, missing hands, side view, etc. | drop 1.1 points |
-| Phone at arm's length | shoulders off-screen, face 30% of the frame | 71.9% |
-| Phone very close | face 50% of the frame | 40.7% - app asks to move back |
-| Signer far away | signer at 1/2 and 1/3 size | 76.9% / 77.2% |
-| Phone = computer | Kotlin feature code vs Python on 14 recorded cases | max difference ~1e-6 |
-| App end to end | built-in test on the Android emulator | 9/10, identical to Python |
-| Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 95.0%, correct caption 62.7% with the sign gate (65.7% without; 50.7% before the fixes), idle hands: 0 words in 600 runs |
-| Signing in a row | 3 test clips back to back, 0.7 s pause, hands kept up | about 50% of words right and in order |
-| Not a sign | held-out non-signs: stretches before/after the sign in WLASL clips, synthetic fidgets (hand drifts, goes to the face, hovers), Kaggle signs outside the 100 words (`scripts/train_gate.py`, `results/gate_report.json`) | word shown without the gate: 45% / 33% / 10%; with it 7% / 7% / 9%, keeping 90% of real signs |
-| Online ASL videos | 9 clips, one from each of 9 ASL websites (first unused test clip per site), uploaded through Test -> Pick a video | 6 of 9 right in the app and in `main.py` |
-| Docker, offline | `docker run --network none` (Python 3.11 image) on the same 9 clips | 7 of 9 right (Linux build of the libraries differs slightly) |
-| Live signing | "help" signed to the laptop camera through the emulator | help shown at 54%, then as a grey guess |
-| Sentence test in the app | 10 three-word sentences = 30 WLASL test clips (always the first test clip of each word, not picked by result), streamed through the live pipeline on the emulator (Test -> Sentence test) | 20 of 30 words right and in order, 1 wrong word (want -> what), 9 not shown |
-| Offline | Docker container with `--network none`; app has no internet permission | works |
-| Unit tests | `pytest` (16) and Android `FeaturesTest` / `EnhanceTest` | all pass |
+| Test | Result |
+|---|---|
+| 3 groups of signers removed from all training, models retrained, scored once (622 clips) | **78.1%** top-1, 93.1% top-5 |
+| Official WLASL100 test clips through `main.py` (201) | **81.6%** |
+| Video corruptions re-run through MediaPipe (422 clips): dark, blur, tilt 15°, low resolution, occlusion | drop **4.6 pt** (−5.0, −7.8, +1.0, −7.3, −4.0) |
+| 9 online ASL videos, one per website, uploaded into the app | **6 of 9** (app and `main.py`), 7 of 9 in Docker |
+| 30 test clips as 10 sentences, through the live pipeline in the app | **20 of 30** words right and in order |
+| Built-in test, 10 official clips on the phone | **9 of 10**, identical to Python |
+| Live signing to the camera | **help** at 54% |
+| Hands resting / fidgeting (600 simulated streams) | **0** false words |
+| Phone at arm's length / very close / signer at ½ and ⅓ size | 71.9% / 40.7% (app asks to move back) / 76.9% / 77.2% |
+| Kotlin features vs Python | max difference ~1e-6 |
+| Unit tests: `pytest` (16), Android `FeaturesTest`, `EnhanceTest`, `SegmenterTest`, `SentenceTest` | all pass |
 
-Honest notes:
+**Honest notes.** The training recipe was chosen after seeing earlier held-out
+results, so 78.1% is slightly optimistic. WLASL has only ~10 clips per word, so
+one new person can score well above or below the average. Latency and thermal
+drift were measured on a laptop CPU; power needs a phone.
 
-- The recipe (near/far and degraded training) was picked after looking at
-  earlier held-out results, so 78.1% is a little optimistic.
-- WLASL has only ~10 clips per word; one new person can score much higher or
-  lower than the average.
-- Phone latency, power and heat need a run on a real phone (Test -> Measure).
+## Run it - three ways
 
-## Run it
+**1. On a phone.** Download
+[`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk),
+install it (any 64-bit Android 8+ phone) and follow the [user guide](docs/USER_GUIDE.md).
 
-**On a phone:** install the APK above and follow the [user guide](docs/USER_GUIDE.md).
-
-**On a computer:**
+**2. Python** (the brief's `predict()`, Python 3.11):
 
 ```bash
 pip install -r requirements-inference.txt
@@ -161,33 +158,37 @@ python main.py --videos path/to/clips --out results/predictions.jsonl
 
 ```python
 from main import predict
-predict("clip.mp4")  # {"prediction": "BIRD", "confidence": 0.87, "top5": [...], ...}
+predict("clip.mp4")
+# {"clip_id": "clip", "prediction": "BIRD", "top5": [...], "confidence": 0.87, "latency_ms": 9.8, ...}
 ```
 
-**With Docker (no network):**
+**3. Docker, fully offline:**
 
 ```bash
-docker build -t echogesture .
-docker run --rm --network none -v "$PWD/clips:/clips" -v "$PWD/out:/out" echogesture --videos /clips --out /out/predictions.jsonl
+docker build -t palmcast .
+docker run --rm --network none -v "$PWD/clips:/clips" -v "$PWD/out:/out" palmcast --videos /clips --out /out/predictions.jsonl
 ```
 
-**Build the app:** `cd android && ./gradlew assembleDebug`.
-
-Training from scratch, data download and every experiment are in
-[docs/DETAILS.md](docs/DETAILS.md).
+Build the app yourself: `cd android && ./gradlew assembleDebug`.
+Submission bundle in the organisers' layout: `python scripts/make_submission.py --team WeCode`.
+Training from scratch and every experiment: [docs/DETAILS.md](docs/DETAILS.md).
 
 ## Repository
 
 ```
-main.py              predict(video) and batch predictions
-echogesture/         landmarks, features, model, augmentation
-scripts/             data download, training, export, evaluation
-android/             the app (Kotlin, CameraX, MediaPipe, ONNX Runtime)
-models/              shipped INT8 model + word list
-results/             results.csv, predictions.jsonl, robustness files
-docs/                full technical record, media
+main.py           predict(video) -> dict, batch predictions
+echogesture/      landmarks, features, model, augmentation (Python)
+android/          the app: Kotlin, CameraX, MediaPipe, ONNX Runtime
+models/           INT8 word model, sign gate, word list
+scripts/          data, training, export, evaluation, measurement
+results/          results.csv, predictions.jsonl, robustness and gate reports
+submission/       slides, demo videos, speech script, diagrams (draw.io)
+docs/             user guide, full technical record, media
 ```
 
-## Team
+## Team WeCode - VIT Chennai
 
-Amritha S, Yugesh
+| Name | Register number |
+|---|---|
+| Amritha S | 23BEC1368 |
+| Yugeshwaran P | 23BEC1404 |

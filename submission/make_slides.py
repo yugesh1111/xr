@@ -315,7 +315,6 @@ def build(template, out, team, college, members):
          [[("Palmcast", {"bold": True, "size": 26, "color": MINT})],
           [("Sign language to text and speech, live, on the phone. No internet, no cloud.", {"size": 14})]],
          name="Product line")
-    picture(sl, MEDIA / "pipeline_frame.png", 7.35, 2.95, h=2.35, name="Landmark preview")
 
     # 2 - the problem: three constraints, each with its number from the brief
     sl = s[1]
@@ -418,7 +417,7 @@ def build(template, out, team, college, members):
         [("INT8 ONNX ", {"bold": True}), ("+ conversion script", {})],
         [("README, Docker, ", {"bold": True}), ("Python 3.11", {})],
         [("Android APK", {"bold": True})],
-        [("Demo video ", {"bold": True}), ("2 min", {})],
+        [("Demo videos ", {"bold": True}), ("2:53 and 6:16", {})],
     ], size=12, bullets=True, space_after=5)
 
     # 7b - requirements from the track slides, with evidence
@@ -517,7 +516,7 @@ def build(template, out, team, college, members):
             p = sh.text_frame.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
             r = p.add_run()
-            r.text = f"Palmcast · {REPO}"
+            r.text = f"Team WeCode · VIT Chennai · Palmcast · {REPO}"
             r.font.name = FONT
             r.font.size = Pt(12)
             r.font.color.rgb = rgb("FFFFFF")
@@ -529,8 +528,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--template", required=True)
     ap.add_argument("--out", default=str(ROOT / "submission" / "Palmcast_XR_Hackathon_Track02.pptx"))
-    ap.add_argument("--team", default="Palmcast")
-    ap.add_argument("--college", default="College Name")
-    ap.add_argument("--members", nargs="+", default=["Amritha S", "Yugesh"])
+    ap.add_argument("--team", default="WeCode")
+    ap.add_argument("--college", default="VIT Chennai")
+    ap.add_argument("--members", nargs="+", default=["Amritha S (23BEC1368)", "Yugeshwaran P (23BEC1404)"])
     a = ap.parse_args()
     build(a.template, a.out, a.team, a.college, a.members)

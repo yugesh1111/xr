@@ -1,4 +1,6 @@
-# Submission - Palmcast, Track 02 (EchoGesture)
+# Submission - Team WeCode (VIT Chennai), Palmcast, Track 02 (EchoGesture)
+
+Amritha S (23BEC1368) · Yugeshwaran P (23BEC1404)
 
 Everything the final-submission email asks for, and where it is in this repository.
 
@@ -7,7 +9,8 @@ Everything the final-submission email asks for, and where it is in this reposito
 | Code | repository root: `main.py` (`predict()`), `echogesture/`, `scripts/`, `android/` |
 | Resources | `models/` (INT8 model, sign gate, word list), `results/` |
 | Document | [`../README.md`](../README.md), [`../docs/DETAILS.md`](../docs/DETAILS.md) (full technical record), [`../docs/USER_GUIDE.md`](../docs/USER_GUIDE.md) |
-| Demo | [`Palmcast_demo.mp4`](Palmcast_demo.mp4) (2 min 8 s) |
+| Demo | [`Palmcast_demo_narrated.mp4`](Palmcast_demo_narrated.mp4) (2:55, narrated) and [`Palmcast_demo_full_narrated.mp4`](Palmcast_demo_full_narrated.mp4) (6:47, detailed); silent versions `Palmcast_demo.mp4`, `Palmcast_demo_full.mp4` for a voice-over; script in [`SPEECH_SCRIPT.md`](SPEECH_SCRIPT.md) |
+| Diagrams | [`diagrams/`](diagrams): architecture (device, training/evaluation) and per-frame flowchart, draw.io sources + PNG |
 | PPT | [`Palmcast_XR_Hackathon_Track02.pptx`](Palmcast_XR_Hackathon_Track02.pptx), built on the organisers' template |
 | Package | Android app: `Palmcast-arm64.apk` on the repository's **Releases** page. Evaluation bundle: `python scripts/make_submission.py --team <team name>` writes `dist/<team name>.zip` in the slides' layout (`src/` + `results/`) |
 | README | [`../README.md`](../README.md) |
@@ -21,7 +24,7 @@ Everything the final-submission email asks for, and where it is in this reposito
 | `results.csv`, the six metrics | `results/results.csv`: 5 of 6 PASS, power needs a phone run |
 | Quantized model + conversion script, < 20 MB INT8 | `models/model_int8.onnx` 6.23 MB (+ sign gate 0.23 MB), `scripts/export_onnx.py` |
 | Python 3.11, `requirements.txt` | checked on Python 3.11.15; `requirements-inference.txt` (in the bundle as `src/requirements.txt`) |
-| Demo video 2-3 min | `submission/Palmcast_demo.mp4` |
+| Demo video 2-3 min | `submission/Palmcast_demo_narrated.mp4` (2:55) |
 
 ## results.csv
 
@@ -42,7 +45,7 @@ unplugged, then copy `results_device.csv` into `results/` and rerun `scripts/mak
 ## Rebuild the slides and the video
 
 ```bash
-python submission/make_slides.py --template Submission_Final_forGithub.pptx \
-  --team "<team name>" --college "<college>" --members "Amritha S" "Yugesh"
-python submission/make_demo_video.py --recording palmcast_demo_30_clips.mp4
+python submission/make_slides.py --template Submission_Final_forGithub.pptx
+python submission/make_demo_video.py --rec <recordings folder> --cut short   # and --cut full
+python submission/narrate.py --video submission/Palmcast_demo.mp4 --cut short
 ```
