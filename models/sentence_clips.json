@@ -54,5 +54,89 @@
    "video_id": "22109",
    "gloss": "FISH"
   }
+ ],
+ [
+  {
+   "video_id": "17020",
+   "gloss": "DOCTOR"
+  },
+  {
+   "video_id": "63769",
+   "gloss": "WORK"
+  },
+  {
+   "video_id": "12306",
+   "gloss": "COMPUTER"
+  }
+ ],
+ [
+  {
+   "video_id": "13635",
+   "gloss": "COUSIN"
+  },
+  {
+   "video_id": "62241",
+   "gloss": "WANT"
+  },
+  {
+   "video_id": "42953",
+   "gloss": "PIZZA"
+  }
+ ],
+ [
+  {
+   "video_id": "26688",
+   "gloss": "HAT"
+  },
+  {
+   "video_id": "06822",
+   "gloss": "BLUE"
+  },
+  {
+   "video_id": "63191",
+   "gloss": "WHITE"
+  }
+ ],
+ [
+  {
+   "video_id": "63219",
+   "gloss": "WHO"
+  },
+  {
+   "video_id": "18316",
+   "gloss": "EAT"
+  },
+  {
+   "video_id": "08915",
+   "gloss": "CANDY"
+  }
+ ],
+ [
+  {
+   "video_id": "20976",
+   "gloss": "FAMILY"
+  },
+  {
+   "video_id": "35506",
+   "gloss": "MEET"
+  },
+  {
+   "video_id": "57640",
+   "gloss": "THANKSGIVING"
+  }
+ ],
+ [
+  {
+   "video_id": "17097",
+   "gloss": "DOG"
+  },
+  {
+   "video_id": "62152",
+   "gloss": "WALK"
+  },
+  {
+   "video_id": "38982",
+   "gloss": "NOW"
+  }
  ]
 ]

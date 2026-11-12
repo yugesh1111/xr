@@ -1006,6 +1006,17 @@ What was done, in order, and why (2026).
   clip of each word, cut to the WLASL frame range (`cut_sentence_clips.py`;
   some source videos are long compilations), fresh tracker per clip, live
   segmenter + caption rule + sentence builder: 9 of 12 words, 0 wrong.
+- Sentence test extended to 10 sentences / 30 clips (first test clip of each
+  word, fixed before looking at results): 20 of 30 words right and in order on
+  the emulator, 1 wrong (WANT -> WHAT), 9 not shown; the Python simulation
+  predicted the same 20. A sign cut in two was read twice ("doctor doctor"),
+  so a word repeated within 2.5 s now counts once.
+- Limits (11-12 Nov): word model 6.23 MB + sign gate 0.23 MB = 6.46 MB INT8
+  (limit 20); classifier 2.4 ms per call on one laptop CPU thread, features +
+  classifier p95 13.9 ms per clip; MediaPipe landmarks p95 49.9 ms per frame
+  on a laptop CPU (phone not measured); top-1 78.06% (>= 70); robustness drop
+  4.64 (<= 5). The MediaPipe Holistic model (13.7 MB, float16, Google's) is
+  separate from our quantized model; with it the app's models total 20.1 MB.
 - Robustness: video-level occlusion added (a bar passing in front of the
   signer every 2 s): 80.1 -> 76.1%. Mean drop over 5 conditions 4.64.
 - Reply captions (on-device SpeechRecognizer), Conversation view, product name

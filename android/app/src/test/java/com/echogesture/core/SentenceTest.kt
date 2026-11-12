@@ -21,7 +21,7 @@ class SentenceTest {
         val s = Sentence()
         s.add("BED", 0); s.add("BED", 800)
         assertEquals("Bed", s.forming())
-        s.add("BED", 3000)  // signed again later: a real repeat
+        s.add("BED", 3500)  // signed again later: a real repeat
         assertEquals("Bed bed", s.forming())
     }
 

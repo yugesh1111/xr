@@ -77,9 +77,9 @@ above the buttons). You get a list: each clip with the app's word and confidence
 the computer version agrees, and timing. Expected: 9 of 10 correct, all the same
 as the computer.
 
-**Test -> Sentence test.** Plays four 3-word sentences made of WLASL test clips
+**Test -> Sentence test.** Plays ten 3-word sentences (30 WLASL test clips)
 through the live pipeline, with the video and hand outlines on screen, and
-shows the sentence forming. Expected: 9 of 12 words.
+shows the sentence forming. Takes about 2 minutes. Expected: 20 of 30 words.
 
 **Test -> Pick a video...** runs any video on the phone (one word per clip).
 

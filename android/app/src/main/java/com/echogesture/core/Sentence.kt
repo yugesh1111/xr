@@ -13,7 +13,7 @@ package com.echogesture.core
  */
 class Sentence(
     private val pauseMs: Long = 4000,
-    private val repeatMs: Long = 1500,
+    private val repeatMs: Long = 2500,
     private val keep: Int = 2,
     private val maxWords: Int = 12,
     /** Called with each sentence as it closes (pause, length cap or [closeNow]). */

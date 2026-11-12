@@ -126,7 +126,7 @@ Predictions for every official test clip: [`results/predictions.jsonl`](results/
 | Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 95.0%, correct caption 62.7% with the sign gate (65.7% without; 50.7% before the fixes), idle hands: 0 words in 600 runs |
 | Signing in a row | 3 test clips back to back, 0.7 s pause, hands kept up | about 50% of words right and in order |
 | Not a sign | held-out non-signs: stretches before/after the sign in WLASL clips, synthetic fidgets (hand drifts, goes to the face, hovers), Kaggle signs outside the 100 words (`scripts/train_gate.py`, `results/gate_report.json`) | word shown without the gate: 45% / 33% / 10%; with it about 5-7% / 5-7% / 7%, keeping 90% of real signs |
-| Sentence test in the app | 4 three-word sentences from WLASL test clips (first test clip of each word), streamed through the live pipeline on the emulator (Test -> Sentence test) | 9 of 12 words right and in order, no wrong words |
+| Sentence test in the app | 10 three-word sentences = 30 WLASL test clips (always the first test clip of each word, not picked by result), streamed through the live pipeline on the emulator (Test -> Sentence test) | 20 of 30 words right and in order, 1 wrong word (want -> what), 9 not shown |
 | Offline | Docker container with `--network none`; app has no internet permission | works |
 | Unit tests | `pytest` (16) and Android `FeaturesTest` / `EnhanceTest` | all pass |
 

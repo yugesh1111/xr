@@ -321,8 +321,8 @@ class MainActivity : AppCompatActivity() {
                 hud.shownAtMs = SystemClock.uptimeMillis()
             }
             if (sure) {
-                sentence.add(r.words[0], if (clipClockMs >= 0) clipClockMs else SystemClock.uptimeMillis())
-                if (clipClockMs >= 0) clipWords.add(r.words[0])
+                val added = sentence.add(r.words[0], if (clipClockMs >= 0) clipClockMs else SystemClock.uptimeMillis())
+                if (clipClockMs >= 0 && added) clipWords.add(r.words[0])
                 refreshTalk()
                 if (speak) say(r.words[0].lowercase())
             }
