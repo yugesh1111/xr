@@ -2,7 +2,7 @@
 
 ## 1. Install
 
-1. On the phone, open the [APK link](https://github.com/Amritha902/xr/releases/latest/download/Palmcast-arm64.apk) and download it.
+1. On the phone, open the [APK link](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) and download it.
 2. Tap the downloaded file. If Android says the source isn't allowed, tap
    **Settings**, turn on **Allow from this source**, go back, tap **Install**.
 3. If Play Protect warns about an unknown app, tap **Install anyway**

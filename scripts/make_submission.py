@@ -47,7 +47,7 @@ predict("clip.mp4")
   is reported next to it (`landmark_ms_per_frame`).
 - Conversion script: `scripts/export_onnx.py` (checkpoint -> ONNX FP32 -> INT8).
 - Training, evaluation and the Android app are described in the repository:
-  https://github.com/Amritha902/xr
+  https://github.com/yugesh1111/xr
 - Headless Linux: `apt-get install libegl1 libgles2 libgl1 libglib2.0-0`
   (MediaPipe needs EGL), or use the `Dockerfile`.
 """

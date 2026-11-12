@@ -61,6 +61,8 @@ def main():
     ap.add_argument("--model", default=str(ROOT / "models" / "model_int8.onnx"))
     ap.add_argument("--robustness-level", default="video")
     ap.add_argument("--out", default="results/results.csv")
+    ap.add_argument("--sustained", help="results/sustained_cpu.json from scripts/sustained_run.py (used when there is no phone run)")
+    ap.add_argument("--cpu-name", default="laptop CPU (no phone run)", help="device label for CPU latency")
     ap.add_argument("--out-detailed", default="results/results_detailed.csv")
     args = ap.parse_args()
 
@@ -148,6 +150,29 @@ def main():
             f"{len(timed)} clips (first skipped: warm-up), computer CPU, not the phone")
         add("latency_p95_classifier_cpu", p95(clf), "ms", "reference", None, Path(args.predictions).name,
             "computer CPU, 1 thread")
+        # no phone run: report the same quantity predict() self-reports as latency_ms
+        # (features + INT8 model per clip), measured on this laptop, and say so
+        if brief.get("latency_p95", (None,))[0] is None and not args.sustained:
+            brief["latency_p95"] = (p95(clf), args.cpu_name,
+                                    "ONNX Runtime INT8, features + classifier per clip (latency_ms in predictions.jsonl); "
+                                    "landmarks per frame reported separately in results_detailed.csv")
+
+    # no phone run: a 10-minute sustained run of the same pipeline on this computer
+    # (scripts/sustained_run.py), labelled as such
+    if args.sustained and Path(args.sustained).exists() and brief.get("latency_p95", (None,))[0] is None:
+        su = json.loads(Path(args.sustained).read_text())
+        dev_name = f"{su['device']} - no phone run"
+        add("latency_p95_per_frame_sustained", su["landmark_ms_per_frame_p95"], "ms", "<= 50",
+            su["landmark_ms_per_frame_p95"] <= 50, Path(args.sustained).name, f"{dev_name}: MediaPipe Holistic per frame, {su['minutes']:.0f} min")
+        add("latency_p95_classifier_sustained", su["classifier_ms_p95"], "ms", "<= 50",
+            su["classifier_ms_p95"] <= 50, Path(args.sustained).name, f"{dev_name}: features + INT8 model per sign")
+        add("thermal_drift_10min_sustained", su["thermal_drift_pct"], "%", "<= 20", su["thermal_drift_pct"] <= 20,
+            Path(args.sustained).name, f"{dev_name}: landmark latency, last vs first minute")
+        brief["latency_p95"] = (su["landmark_ms_per_frame_p95"], dev_name,
+                                f"MediaPipe Holistic + ONNX Runtime INT8 (CPU), per camera frame, {su['minutes']:.0f}-min sustained run; "
+                                f"classifier p95 {su['classifier_ms_p95']} ms per sign")
+        brief["thermal_drift_10min"] = (su["thermal_drift_pct"], dev_name,
+                                        f"{su['minutes']:.0f}-min sustained run, per-frame latency last vs first minute")
 
     detailed = Path(args.out_detailed)
     detailed.parent.mkdir(parents=True, exist_ok=True)

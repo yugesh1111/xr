@@ -11,3 +11,6 @@ avg_power_phone,,mW,<= 500,,results_device.csv,"no phone run yet: whole phone, u
 thermal_drift_10min_phone,,%,<= 20,,results_device.csv,"no phone run yet: landmark latency, first vs last minute"
 latency_p95_per_frame_cpu,49.97,ms,reference,,predictions.jsonl,"200 clips (first skipped: warm-up), computer CPU, not the phone"
 latency_p95_classifier_cpu,13.86,ms,reference,,predictions.jsonl,"computer CPU, 1 thread"
+latency_p95_per_frame_sustained,13.98,ms,<= 50,PASS,sustained_cpu.json,"MacBook Air (Apple M5 CPU) - no phone run: MediaPipe Holistic per frame, 10 min"
+latency_p95_classifier_sustained,5.41,ms,<= 50,PASS,sustained_cpu.json,MacBook Air (Apple M5 CPU) - no phone run: features + INT8 model per sign
+thermal_drift_10min_sustained,5.28,%,<= 20,PASS,sustained_cpu.json,"MacBook Air (Apple M5 CPU) - no phone run: landmark latency, last vs first minute"

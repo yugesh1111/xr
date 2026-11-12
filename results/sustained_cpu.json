@@ -1,0 +1,10 @@
+{
+ "device": "MacBook Air (Apple M5 CPU)",
+ "minutes": 10.0,
+ "predictions": 629,
+ "landmark_ms_per_frame_p95": 13.98,
+ "classifier_ms_p95": 5.41,
+ "landmark_ms_first_minute_median": 11.25,
+ "landmark_ms_last_minute_median": 11.84,
+ "thermal_drift_pct": 5.28
+}

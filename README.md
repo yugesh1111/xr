@@ -11,9 +11,11 @@ Language Prediction on Edge Device"**.
 
 | | |
 |---|---|
-| **Android app (APK)** | [Palmcast-arm64.apk](https://github.com/Amritha902/xr/releases/latest/download/Palmcast-arm64.apk) - any 64-bit Android phone, Android 8+ |
+| **Android app (APK)** | [Palmcast-arm64.apk](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) - any 64-bit Android phone, Android 8+ |
 | **How to use it** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - install, set up, sign, buttons, troubleshooting |
-| **Demo video** | _coming soon_ - plan in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| **Demo video** | [submission/Palmcast_demo.mp4](submission/Palmcast_demo.mp4) - 2 min, 30 test clips through the live pipeline |
+| **Presentation** | [submission/Palmcast_XR_Hackathon_Track02.pptx](submission/Palmcast_XR_Hackathon_Track02.pptx) |
+| **Submission package** | `python scripts/make_submission.py` builds `<team>.zip` (src/ + results/) in the organisers' layout |
 | **Full technical record** | [docs/DETAILS.md](docs/DETAILS.md) |
 
 ## Why
@@ -103,9 +105,11 @@ Targets are from the hackathon brief.
 | Top-1 accuracy, **people the model never saw** | >= 70% | **78.1%** | PASS |
 | Model size | <= 20 MB | **6.2 MB** | PASS |
 | Accuracy drop under dark, blur, tilt, low resolution, occlusion | <= 5 points | **4.6** | PASS |
-| Latency per frame (phone) | <= 50 ms | not measured on a phone yet | - |
-| Average power (phone) | <= 500 mW | not measured on a phone yet | - |
-| Thermal drift over 10 min | <= 20% | not measured on a phone yet | - |
+| Latency per frame, p95 | <= 50 ms | **14.0 ms** (word model 5.4 ms per sign) | PASS* |
+| Average power (phone) | <= 500 mW | needs a phone run | - |
+| Thermal drift over 10 min | <= 20% | **5.3%** | PASS* |
+
+\* 10-minute sustained run of the full pipeline on a laptop CPU (Apple M5, `scripts/sustained_run.py`), not a phone. The app's measurement run (Test menu) records the same numbers and power on a phone.
 
 The file the judges read: [`results/results.csv`](results/results.csv).
 Predictions for every official test clip: [`results/predictions.jsonl`](results/predictions.jsonl).
@@ -125,7 +129,7 @@ Predictions for every official test clip: [`results/predictions.jsonl`](results/
 | App end to end | built-in test on the Android emulator | 9/10, identical to Python |
 | Live path | test clips streamed through the app's sign detection + caption rule at ~12 fps (`scripts/live_sim.py`) | sign found 95.0%, correct caption 62.7% with the sign gate (65.7% without; 50.7% before the fixes), idle hands: 0 words in 600 runs |
 | Signing in a row | 3 test clips back to back, 0.7 s pause, hands kept up | about 50% of words right and in order |
-| Not a sign | held-out non-signs: stretches before/after the sign in WLASL clips, synthetic fidgets (hand drifts, goes to the face, hovers), Kaggle signs outside the 100 words (`scripts/train_gate.py`, `results/gate_report.json`) | word shown without the gate: 45% / 33% / 10%; with it about 5-7% / 5-7% / 7%, keeping 90% of real signs |
+| Not a sign | held-out non-signs: stretches before/after the sign in WLASL clips, synthetic fidgets (hand drifts, goes to the face, hovers), Kaggle signs outside the 100 words (`scripts/train_gate.py`, `results/gate_report.json`) | word shown without the gate: 45% / 33% / 10%; with it 7% / 7% / 9%, keeping 90% of real signs |
 | Sentence test in the app | 10 three-word sentences = 30 WLASL test clips (always the first test clip of each word, not picked by result), streamed through the live pipeline on the emulator (Test -> Sentence test) | 20 of 30 words right and in order, 1 wrong word (want -> what), 9 not shown |
 | Offline | Docker container with `--network none`; app has no internet permission | works |
 | Unit tests | `pytest` (16) and Android `FeaturesTest` / `EnhanceTest` | all pass |
@@ -180,4 +184,4 @@ docs/                full technical record, media
 
 ## Team
 
-Amritha S
+Amritha S, Yugesh
