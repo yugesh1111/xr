@@ -1,63 +1,36 @@
-# Speech script - Palmcast walkthrough (2:47)
+# Speech script - Palmcast walkthrough (2:55)
 
-For `submission/Palmcast_walkthrough.mp4`. Read at a relaxed pace (about 140
-words a minute). Each part lines up with the label on screen; the times are
-where that part starts. If a part runs short, just pause - the picture keeps
-going. Record in a quiet room, phone mic about 20 cm away, one take per part
-is fine (send the parts as separate files and they will be placed on the
-timeline).
+For `submission/Palmcast_walkthrough.mp4`. Six parts, one recording each (`part1` ... `part6`);
+`submission/add_voiceover.py --voice <folder>` puts them on the video. Read it like you are explaining it
+to a friend; the video waits if a part runs long. Editable copy: Palmcast_Voiceover_Script.docx (in the submission package).
 
----
+### Part 1 - Live on the phone  (screen: you signing "help" · about 14 s)
 
-### 01 · Live camera, on the phone - 0:00 to 0:14  (about 30 words)
+> Hi, we're team WeCode, and this is Palmcast. It's running on an Android phone that has no internet permission at all. I sign "help"... and there it is. Help, fifty-four percent.
 
-> This is Palmcast, running on an Android phone with no internet at all.
-> I sign "help" to the camera. The app tracks my hands, cuts out the sign,
-> and shows **help** at fifty-four percent.
+### Part 2 - How it works, live  (screen: signers building sentences · about 44 s)
 
-### 02 · Sentences building as they are signed - 0:14 to 0:58  (about 95 words)
-
-> Signing is continuous, so Palmcast doesn't wait for a button. A sign ends
-> when the hands pause for half a second, the word is recognised, and it
-> joins the sentence that is forming at the top.
+> Here's what's happening underneath. On every camera frame, MediaPipe finds eighty-eight points on the body, the hands and the face. We turn those into body-relative features, so it doesn't matter where you stand or what's behind you. A small filter smooths out the tracker's jitter.
 >
-> These signers were never seen in training. "Man help now." "Woman drink
-> hot." "Hat blue white."
+> When the hands pause for half a second, that stretch is cut out as one sign and handed to the model. Watch the sentence build. Sure words turn white and are spoken; a guess stays grey. And none of these signers were in our training data.
+
+### Part 3 - A clip from the internet  (screen: uploaded web clip, then its result · about 30 s)
+
+> It isn't tied to our camera either. Here we upload a clip from aslbricks dot org. The phone runs exactly the same pipeline on it, frame by frame. You can see the hand outline it's tracking. The answer: basketball, eighty-one percent. We tried nine clips from nine different websites. Six came back right, and they're the same six our Python code gets.
+
+### Part 4 - Sentence test  (screen: sentence test on the phone, then the score · about 37 s)
+
+> Next, the sentence test: thirty clips of unseen signers, played as ten short sentences through the live pipeline. It gets twenty out of thirty words right, and in the right order.
 >
-> Words the model is sure about are shown in white and spoken. A fair guess
-> is shown in grey with a question mark and is never spoken. And when the hands
-> are resting, nothing is shown - a sign gate and a landmark filter stop
-> jitter and fidgeting from turning into words.
+> Before any word reaches the screen, a tiny sign gate, just a quarter of a megabyte, asks: is this a real sign at all? That's why resting or fidgeting hands never turn into words.
 
-### 03 · A video from the web, uploaded into the app - 0:58 to 1:29  (about 60 words)
+### Part 5 - Built-in test  (screen: built-in test, then 9 of 10 · about 33 s)
 
-> It also works on video it has never seen. Here I pick a clip downloaded from
-> aslbricks.org. The phone reads it frame by frame - you can see the hand
-> outline on every frame - and answers **basketball**, eighty-one percent.
-> We tried nine clips from nine different websites: six right on the phone,
-> the same six as our Python code.
+> The word model itself is four small networks averaged together, quantised to INT8. Six point two megabytes in total. The built-in test runs ten official test clips on the phone and checks every answer against the computer. Nine out of ten are correct, and every single answer matches Python. That's because the Kotlin code on the phone is a direct port of the code we evaluate.
 
-### 04 · Sentence test on the phone - 1:29 to 2:06  (about 70 words)
+### Part 6 - For the judges  (screen: terminal with predict() and results · about 17 s)
 
-> To test sentences honestly, the app plays thirty test clips as ten
-> three-word sentences through exactly the live pipeline: hands drop between
-> words, a long pause ends the sentence. The result is twenty of thirty words
-> right and in the right order. Single words from new signers are right
-> seventy-eight percent of the time, against a target of seventy.
-
-### 05 · Built-in test - 2:06 to 2:30  (about 45 words)
-
-> The built-in test runs ten official clips on the phone and compares with the
-> computer: nine of ten right, and the same answer as Python on every clip.
-> The phone and the evaluation code are one pipeline, not two.
-
-### 06 · predict() for the evaluators - 2:30 to 2:47  (about 35 words)
-
-> For the judges, `predict()` in `main.py` runs fully offline. The word model
-> is six point two megabytes in INT8, under fourteen milliseconds per frame.
-> Palmcast - sign language, on the device, in real time.
-
----
+> For judging, predict() in main.py runs completely offline: about fourteen milliseconds per frame, with less than five points lost on dark, blurry or blocked video. Everything is on GitHub. That's Palmcast: sign language, understood right on the device.
 
 ## Numbers you can quote (all measured, in `results/`)
 
@@ -70,4 +43,4 @@ timeline).
 | Accuracy drop: dark, blur, tilt, low-res, occlusion | 4.6 points (limit 5) |
 | Thermal drift over 10 minutes | 5.3% (limit 20%) |
 | Resting / fidgeting hands | 0 false words in 600 runs |
-| Landmark filter, with webcam-like jitter | false words 140/600 → 0/600; 3-sign sentences 33% → 49% |
+| Jitter filter, with webcam-like jitter | false words 140/600 → 0/600; 3-sign sentences 33% → 49% |
