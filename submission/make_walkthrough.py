@@ -101,11 +101,12 @@ def main():
     phone, wide = (486, 1080), (1600, 900)
     steps = [
         (rec / "live_help.mp4", "Live camera, on the phone", "Hands tracked as they sign HELP: shown at 54%, then a grey guess", [(0, 14, 1.0)], phone),
-        (Path(a.laptop), "Sentences building as they are signed", "Test clips from signers the model never saw: man help now, woman drink hot, hat blue white", [(0, 17, 1.0), (28, 41, 1.0), (79, 93, 1.0)], wide),
+        (Path(a.laptop), "Sentences building as they are signed", "16 signs from 5 signers the model never saw, read live, sentence by sentence",
+         [(0, 11.5, 1.25), (13.5, 25.5, 1.25), (27.5, 40, 1.25), (41.5, 50.5, 1.25), (80, 91.5, 1.25), (95, 106.5, 1.25)], wide),
         # result pop-ups sit over the live camera: only the card itself is shown (result_*.png)
         (rec / "online_0.mp4", "A video from the web, uploaded into the app", "aslbricks.org clip, read frame by frame on the phone: basketball 81%", [(16, 49.5, 1.5), (rec / "result_online_0.png", 8)], phone),
-        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(10, 110.5, 3.6), (rec / "result_sentence.png", 9)], phone),
-        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 125, 1.0), (rec / "result_builtin.png", 9)], phone),
+        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(10, 110.5, 4.6), (rec / "result_sentence.png", 7.5)], phone),
+        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 120, 1.0), (rec / "result_builtin.png", 10)], phone),
         (rec / "terminal.mp4", "predict() for the evaluators, offline", "python main.py on 9 web clips: 6 right; model 6.2 MB + 0.23 MB sign gate", [(0, dur(rec / "terminal.mp4"), 1.0)], (1274, 900)),
     ]
     chapters, t0 = [], 0.0
