@@ -31,6 +31,18 @@ answer by voice, and their words appear as captions. Everything runs on the
 phone: the app has no internet permission, so video of people never leaves the
 device.
 
+## Submission checklist
+
+| Asked for | Where |
+|---|---|
+| Submission package (`team_name.zip`: `src/` + `results/`) | [`submission/WeCode.zip`](submission/WeCode.zip) |
+| Source code | this repository: [`main.py`](main.py) (`predict()`), [`echogesture/`](echogesture), [`scripts/`](scripts), [`android/`](android) |
+| Presentation | [`submission/Palmcast_XR_Hackathon_Track02.pptx`](submission/Palmcast_XR_Hackathon_Track02.pptx) |
+| Video | [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) (2:55) |
+| README | this page, plus the [user guide](docs/USER_GUIDE.md) and [technical record](docs/DETAILS.md) |
+| APK | [`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) · [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk) |
+| Results | [`results/results.csv`](results/results.csv), [`results/predictions.jsonl`](results/predictions.jsonl) |
+
 ## Palmcast reading people it has never seen
 
 Each GIF is the live pipeline on test signers that were never in training: the hands are tracked, each sign is cut out at a pause, and the words join into a sentence.
