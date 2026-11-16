@@ -19,6 +19,8 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 **[User guide](docs/USER_GUIDE.md)** ·
 **[Technical record](docs/DETAILS.md)**
 
+[![Watch the demo](docs/media/demo_thumbnail.jpg)](submission/Palmcast_demo_final.mp4)
+
 </div>
 
 ---
