@@ -41,8 +41,7 @@ All three are screen recordings of the release APK on the Android emulator
 **[Walkthrough video, 2:47](submission/Palmcast_walkthrough.mp4)**: real
 screen recordings only - live camera, sentences forming, a web video uploaded
 into the app, the sentence test, the built-in test and `predict()`
-([speech script](submission/SPEECH_SCRIPT.md)). Earlier cuts with title cards:
-[2:55](submission/Palmcast_demo_narrated.mp4), [6:47](submission/Palmcast_demo_full_narrated.mp4).
+([speech script](submission/SPEECH_SCRIPT.md)).
 
 ![Live pipeline on a laptop: woman drink hot](docs/media/laptop_live.png)
 

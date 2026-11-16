@@ -66,8 +66,14 @@ def segment(src, out, tmp, n, title, sub, parts, box):
     bw, bh = box
     mask(msk, bw, bh, 36 if bw < bh else 22)
     chains, ins = [], []
-    for i, (a, b, sp) in enumerate(parts):
-        ins += ["-ss", f"{a}", "-t", f"{b - a}", "-i", str(src)]
+    for i, part in enumerate(parts):
+        if isinstance(part[0], Path):   # (image, seconds): a still, e.g. a result card
+            img, secs = part
+            ins += ["-loop", "1", "-t", f"{secs}", "-i", str(img)]
+            sp = 1.0
+        else:
+            a, b, sp = part
+            ins += ["-ss", f"{a}", "-t", f"{b - a}", "-i", str(src)]
         chains.append(f"[{i}:v]setpts=PTS/{sp},fps=30,scale={bw}:{bh}:force_original_aspect_ratio=decrease,"
                       f"pad={bw}:{bh}:(ow-iw)/2:(oh-ih)/2:color=0x0c1016,setsar=1[p{i}]")
     k = len(parts)
@@ -96,9 +102,10 @@ def main():
     steps = [
         (rec / "live_help.mp4", "Live camera, on the phone", "Hands tracked as they sign HELP: shown at 54%, then a grey guess", [(0, 14, 1.0)], phone),
         (Path(a.laptop), "Sentences building as they are signed", "Test clips from signers the model never saw: man help now, woman drink hot, hat blue white", [(0, 17, 1.0), (28, 41, 1.0), (79, 93, 1.0)], wide),
-        (rec / "online_0.mp4", "A video from the web, uploaded into the app", "aslbricks.org clip, read frame by frame on the phone: basketball 81%", [(5, 44, 1.7), (44, 52, 1.0)], phone),
-        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(9, 110, 3.6), (110, 119, 1.0)], phone),
-        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 125, 1.0)], phone),
+        # result pop-ups sit over the live camera: only the card itself is shown (result_*.png)
+        (rec / "online_0.mp4", "A video from the web, uploaded into the app", "aslbricks.org clip, read frame by frame on the phone: basketball 81%", [(16, 49.5, 1.5), (rec / "result_online_0.png", 8)], phone),
+        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(10, 110.5, 3.6), (rec / "result_sentence.png", 9)], phone),
+        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 125, 1.0), (rec / "result_builtin.png", 9)], phone),
         (rec / "terminal.mp4", "predict() for the evaluators, offline", "python main.py on 9 web clips: 6 right; model 6.2 MB + 0.23 MB sign gate", [(0, dur(rec / "terminal.mp4"), 1.0)], (1274, 900)),
     ]
     chapters, t0 = [], 0.0

@@ -9,7 +9,7 @@ Everything the final-submission email asks for, and where it is in this reposito
 | Code | repository root: `main.py` (`predict()`), `echogesture/`, `scripts/`, `android/` |
 | Resources | `models/` (INT8 model, sign gate, word list), `results/` |
 | Document | [`../README.md`](../README.md), [`../docs/DETAILS.md`](../docs/DETAILS.md) (full technical record), [`../docs/USER_GUIDE.md`](../docs/USER_GUIDE.md) |
-| Demo | [`Palmcast_walkthrough.mp4`](Palmcast_walkthrough.mp4) (2:47): real screen recordings only, feature by feature; voice-over script in [`SPEECH_SCRIPT.md`](SPEECH_SCRIPT.md). Also [`Palmcast_live_pipeline_10_sentences.mp4`](Palmcast_live_pipeline_10_sentences.mp4) (all 10 test sentences through the live pipeline) and earlier cuts `Palmcast_demo_narrated.mp4` / `Palmcast_demo_full_narrated.mp4` |
+| Demo | [`Palmcast_walkthrough.mp4`](Palmcast_walkthrough.mp4) (2:47): real screen recordings only, feature by feature; voice-over script in [`SPEECH_SCRIPT.md`](SPEECH_SCRIPT.md). Also [`Palmcast_live_pipeline_10_sentences.mp4`](Palmcast_live_pipeline_10_sentences.mp4) (all 10 test sentences through the live pipeline) |
 | Diagrams | [`diagrams/`](diagrams): architecture (device, training/evaluation) and per-frame flowchart, draw.io sources + PNG |
 | PPT | [`Palmcast_XR_Hackathon_Track02.pptx`](Palmcast_XR_Hackathon_Track02.pptx), built on the organisers' template |
 | Package | Android app: `Palmcast-arm64.apk` on the repository's **Releases** page. Evaluation bundle: `python scripts/make_submission.py --team <team name>` writes `dist/<team name>.zip` in the slides' layout (`src/` + `results/`) |
@@ -46,8 +46,6 @@ unplugged, then copy `results_device.csv` into `results/` and rerun `scripts/mak
 
 ```bash
 python submission/make_slides.py --template Submission_Final_forGithub.pptx
-python submission/make_demo_video.py --rec <recordings folder> --cut short   # and --cut full
-python submission/narrate.py --video submission/Palmcast_demo.mp4 --cut short
 python live.py --demo --fast --mute --save laptop.mp4
 python submission/make_walkthrough.py --rec <recordings folder> --laptop laptop.mp4
 ```

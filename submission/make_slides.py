@@ -321,18 +321,16 @@ def build(template, out, team, college, members):
     text(sl, 0.45, 1.05, 9.1, 0.7,
          [[("Sign language conversations break down when only one side signs, and cloud translation sends video of "
             "people to a server.", {"size": 16})]], name="Problem statement")
-    for i, (num, head, body, col) in enumerate([
-            ("≤ 50 ms", "Keep up with signing", "Captions must keep pace with a conversation, one word at a time.", CYAN),
-            ("0 bytes", "Video stays on the phone", "The camera films the person signing to you; their video never leaves the device.", MINT),
-            ("≤ 20 MB", "Fit a phone's budget", "INT8 model, ≤ 500 mW, no throttling: compute only while someone signs.", AMBER)]):
-        x = 0.45 + i * 3.07
-        box(sl, x, 1.95, 2.92, 2.3, name=f"Constraint {i + 1}")
-        text(sl, x + 0.2, 2.05, 2.6, 0.7, [[(num, {"bold": True, "size": 34, "color": col})]])
-        text(sl, x + 0.2, 2.8, 2.6, 0.4, [[(head, {"bold": True, "size": 14})]])
-        text(sl, x + 0.2, 3.2, 2.6, 1.0, [[(body, {"size": 12, "color": MUTED})]])
-    text(sl, 0.45, 4.45, 9.1, 0.6,
-         [[("Exocentric view (Track 02): moving heads, angled signers, low light, hands leaving the frame, objects passing in front.",
-            {"size": 12, "color": MUTED, "italic": True})]], name="Conditions")
+    text(sl, 0.45, 1.95, 9.1, 0.4, [[("So the translator has to live on the phone, and that brings three hard limits:",
+                                       {"size": 14, "color": MUTED})]], name="Lead-in")
+    table(sl, 0.45, 2.45, 9.1, [2.2, 6.9], [
+        ("Keep up", "A caption late by more than about 50 ms per frame makes the conversation feel out of sync."),
+        ("Stay private", "The camera films a bystander. Their video must never leave the device: no cloud, no upload."),
+        ("Stay small and cool", "Under 20 MB INT8 and about 500 mW, without heating up over a 10-minute conversation."),
+    ], ["Limit", "Why it is hard"], size=13, row_h=0.5)
+    text(sl, 0.45, 4.6, 9.1, 0.6,
+         [[("On top of that the view is exocentric: the signer moves, stands at an angle, is badly lit, or walks partly "
+            "out of frame.", {"size": 12, "color": MUTED})]], name="Conditions")
 
     # 3 - solution
     sl = s[2]
@@ -449,30 +447,32 @@ def build(template, out, team, college, members):
 
     # 9 - implementation photos (real recordings)
     sl = s[9]
-    shots = [("impl_live_help.png", "Live: signing \"help\" → help 54%"),
-             ("impl_online_clip.png", "Uploaded online clip being read"),
-             ("impl_online_result.png", "Its answer: basketball 81%"),
-             ("impl_builtin.png", "Built-in test: 9 of 10")]
-    for i, (f, cap) in enumerate(shots):
-        x = 0.4 + i * 1.62
-        picture(sl, MEDIA / f, x, 1.02, h=3.3, name=f"Shot {i + 1}")
-        text(sl, x - 0.05, 4.37, 1.6, 0.6, [[(cap, {"size": 10})]], name=f"Caption {i + 1}")
-    picture(sl, MEDIA / "impl_terminal.png", 6.95, 1.02, w=2.65, name="Terminal")
-    text(sl, 6.95, 2.95, 2.65, 1.2, [[("Python predict() on the same 9 online clips: 6 of 9 right; results.csv: 5 of 6 PASS "
-                                       "(Python 3.11).", {"size": 10})]], name="Terminal caption")
-    text(sl, 0.4, 5.0, 9.2, 0.4, [[("All screenshots are from screen recordings of the release APK on the Android emulator "
-                                     "and a terminal session; see the demo videos.", {"size": 10, "color": MUTED})]])
+    # four steps, left to right, each with a numbered caption; result cards cropped so they can be read
+    cap = lambda n, t: [[(f"{n}  ", {"bold": True, "color": MINT}), (t, {})]]
+    picture(sl, MEDIA / "impl_live_help.png", 0.4, 1.02, h=3.45, name="Shot live")
+    text(sl, 0.4, 4.52, 1.6, 0.6, cap(1, "Live camera: \"help\" read as help, 54%"), size=10, name="Caption 1")
+    picture(sl, MEDIA / "impl_online_clip.png", 2.1, 1.02, h=3.45, name="Shot upload")
+    text(sl, 2.1, 4.52, 1.6, 0.6, cap(2, "A web clip uploaded into the app, read frame by frame"), size=10, name="Caption 2")
+    picture(sl, MEDIA / "impl_online_result.png", 3.8, 1.02, w=2.35, name="Shot result")
+    text(sl, 3.8, 2.13, 2.35, 0.3, cap(3, "Its answer: basketball, 81%"), size=10, name="Caption 3")
+    picture(sl, MEDIA / "impl_builtin_result.png", 3.8, 2.5, w=1.95, name="Shot builtin")
+    text(sl, 3.8, 4.7, 2.4, 0.45, cap(4, "Built-in test: 9 of 10, same as Python"), size=10, name="Caption 4")
+    picture(sl, MEDIA / "impl_terminal.png", 6.35, 1.02, w=3.25, name="Terminal")
+    text(sl, 6.35, 3.4, 3.25, 0.9, cap(5, "predict() in Python on the same 9 web clips: 6 right. results.csv: 5 of 6 targets met "
+                                          "(power needs a phone run)."), size=10, name="Caption 5")
+    text(sl, 0.4, 5.12, 9.2, 0.3, [[("All screenshots come from screen recordings of the release APK on the Android emulator "
+                                     "and a terminal session.", {"size": 9, "color": MUTED})]])
 
     # 10 - differentiation: numbers first
     sl = s[10]
-    tiles = [("78.1%", "on people the model never saw (whole signers held out)", MINT),
-             ("~7%", "of fidgets shown as a word, down from 33-45%, thanks to the sign gate", CYAN),
-             ("2-way", "signs become text and speech; spoken replies become captions", AMBER),
-             ("6.5 MB", "all our models, INT8; word model 2.4 ms per call", MINT),
-             ("20 / 30", "words right in the in-app sentence test, 0 false words from idle hands", CYAN),
-             ("≈ 1e-6", "difference between the phone's Kotlin features and Python", AMBER)]
-    for i, (n, l, c) in enumerate(tiles):
-        stat(sl, 0.45 + (i % 3) * 3.07, 1.15 + (i // 3) * 2.1, 2.92, 1.85, n, l, c, num_size=36, name=f"Diff {i + 1}")
+    table(sl, 0.45, 1.1, 9.1, [3.4, 5.7], [
+        ("Tested on clips of people already seen in training", "Whole signers held out: 78.1% on people the model never saw"),
+        ("Any hand movement turns into a word", "Movement check, sign gate and jitter filter: no words from resting hands in 600 runs"),
+        ("One word per button press", "Continuous: signs are cut at pauses and build a sentence (20 of 30 in the sentence test)"),
+        ("Cloud API or a large model", "6.2 MB INT8 word model + 0.23 MB gate; the app has no internet permission"),
+        ("The demo app and the evaluated code differ", "Same pipeline: the phone gives the Python answer on 10 of 10 clips"),
+        ("Captions go one way only", "Reply: the hearing person speaks, the signer reads it as captions"),
+    ], ["Common in sign-to-text demos", "What Palmcast does instead"], size=12, row_h=0.6)
 
     # 11 - demo & local setup
     sl = s[11]
@@ -500,17 +500,15 @@ def build(template, out, team, college, members):
     bar_chart(sl, 0.4, 1.05, 4.9, 4.3, ["Hands resting", "Fidgeting", "Other signs", "Real signs"],
               [("Without gate", [45.0, 33.1, 10.4, 65.6]), ("With gate", [7.2, 7.4, 8.8, 58.8])],
               "How often a word appears (%)", [MUTED, MINT], vmin=0, vmax=80, name="Chart gate", legend=True)
-    for i, (t, b, c) in enumerate([("Reply captions", "Spoken answers become captions, on-device", CYAN),
-                                   ("Running sentence", "Words join up; a pause adds the full stop", MINT),
-                                   ("Offline voice", "Each word spoken with an installed voice", AMBER),
-                                   ("Low light", "Torch, or a white ring light on the screen", CYAN),
-                                   ("Jitter filter", "One Euro filter: 0 false words under webcam jitter", MINT),
-                                   ("Measurement mode", "10-min run logs latency, power, heat", AMBER)]):
-        x = 5.5 + (i % 2) * 2.05
-        y = 1.1 + (i // 2) * 1.43
-        box(sl, x, y, 1.95, 1.3, name=f"Brownie {i + 1}")
-        text(sl, x + 0.12, y + 0.1, 1.75, 0.35, [[(t, {"bold": True, "size": 12, "color": c})]])
-        text(sl, x + 0.12, y + 0.45, 1.75, 0.8, [[(b, {"size": 11})]])
+    text(sl, 5.55, 1.1, 4.0, 0.4, [[("Extras beyond the brief", {"bold": True, "size": 15, "color": AMBER})]], name="Extras title")
+    text(sl, 5.55, 1.6, 4.0, 3.8, [
+        [("Reply captions: ", {"bold": True}), ("the other person's speech becomes captions, on the phone", {})],
+        [("Running sentence: ", {"bold": True}), ("words join up, a 4 s pause adds the full stop", {})],
+        [("Offline voice: ", {"bold": True}), ("sure words are spoken with an installed voice", {})],
+        [("Low light: ", {"bold": True}), ("torch, or a white ring on the screen", {})],
+        [("Jitter filter: ", {"bold": True}), ("false words from resting hands under webcam jitter, 140 of 600 down to 0", {})],
+        [("Measure mode: ", {"bold": True}), ("a 10-minute run logs latency, power and heat", {})],
+    ], size=12, bullets=True, space_after=7, name="Extras")
 
     # 13 - thank you
     sl = s[13]
