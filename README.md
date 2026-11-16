@@ -38,7 +38,7 @@ device.
 
 All three are screen recordings of the release APK on the Android emulator
 (the laptop camera is the phone camera).
-**[Walkthrough video, 2:55](submission/Palmcast_walkthrough.mp4)**: real
+**[Walkthrough video, 2:54](submission/Palmcast_walkthrough.mp4)**: real
 screen recordings only - live camera, sentences forming, a web video uploaded
 into the app, the sentence test, the built-in test and `predict()`
 ([speech script](submission/SPEECH_SCRIPT.md)).

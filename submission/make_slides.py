@@ -465,14 +465,18 @@ def build(template, out, team, college, members):
 
     # 10 - differentiation: numbers first
     sl = s[10]
-    table(sl, 0.45, 1.1, 9.1, [3.4, 5.7], [
-        ("Tested on clips of people already seen in training", "Whole signers held out: 78.1% on people the model never saw"),
-        ("Any hand movement turns into a word", "Movement check, sign gate and jitter filter: no words from resting hands in 600 runs"),
-        ("One word per button press", "Continuous: signs are cut at pauses and build a sentence (20 of 30 in the sentence test)"),
-        ("Cloud API or a large model", "6.2 MB INT8 word model + 0.23 MB gate; the app has no internet permission"),
-        ("The demo app and the evaluated code differ", "Same pipeline: the phone gives the Python answer on 10 of 10 clips"),
-        ("Captions go one way only", "Reply: the hearing person speaks, the signer reads it as captions"),
-    ], ["Common in sign-to-text demos", "What Palmcast does instead"], size=12, row_h=0.6)
+    # four headline numbers, one accent colour, then what they replace
+    for i, (n, l) in enumerate([("78.1%", "right on people the model never saw"),
+                                ("0 / 600", "false words from resting hands"),
+                                ("6.4 MB", "every model on the phone, INT8"),
+                                ("10 / 10", "phone answers identical to Python")]):
+        stat(sl, 0.45 + i * 2.3, 1.08, 2.15, 1.42, n, l, MINT, num_size=34, name=f"Number {i + 1}")
+    table(sl, 0.45, 2.7, 9.1, [3.4, 5.7], [
+        ("Tested on people already seen in training", "Whole signers held out; 78.1% on new people, 81.6% on the official test"),
+        ("Any hand movement becomes a word", "Movement check, a 0.23 MB sign gate and a jitter filter: idle hands stay silent"),
+        ("One word per button press", "Continuous signing: cut at pauses, joined into a sentence as you sign"),
+        ("Cloud API, or a demo app unlike the evaluated code", "No internet permission; the Kotlin pipeline is a port of the Python one"),
+    ], ["Common in sign-to-text demos", "What Palmcast does instead"], size=11, row_h=0.47)
 
     # 11 - demo & local setup
     sl = s[11]
