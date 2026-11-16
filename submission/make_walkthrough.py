@@ -119,15 +119,15 @@ def main():
     rec = Path(a.rec)
     phone, wide = (486, 1080), (1600, 900)
     steps = [
-        (rec / "live_help.mp4", "Live camera, on the phone", "Hands tracked as they sign HELP: shown at 54%, then a grey guess", [(0, 14, 1.0)], phone),
+        (rec / "live_help.mp4", "Live camera, on the phone", "Hands tracked as they sign HELP: shown at 54%, then a grey guess", [(rec / "live_help_first.png", 4), (0, 3, 0.5), (3, 7, 1.0)], phone),
         (ROOT / "submission" / "media" / "arch_shot.mp4", "How it works, on the phone", "Camera, landmarks, sign detection, features, sign gate and word model, captions: all on the device",
          [(0, 24.2, 1.0)], wide),
         (Path(a.laptop), "Sentences building as they are signed", "Signers the model never saw: son play basketball, woman drink hot, hat blue white, eat candy",
          [(13.5, 25.5, 1.25), (27.5, 40, 1.25), (80, 91.5, 1.25), (95, 106.5, 1.25)], wide),
         # result pop-ups sit over the live camera: only the card itself is shown (result_*.png)
-        (rec / "online_0.mp4", "A video from the web, uploaded into the app", "aslbricks.org clip, read frame by frame on the phone: basketball 81%", [(16, 49.5, 1.5), (rec / "result_online_0.png", 8)], phone),
-        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(10, 110.5, 4.6), (rec / "result_sentence.png", 7.5)], phone),
-        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 120, 1.0), (rec / "result_builtin.png", 10)], phone),
+        (rec / "online_0.mp4", "A video from the web, uploaded into the app", "aslbricks.org clip, read frame by frame on the phone: basketball 81%", [(16, 49.5, 1.5), (rec / "result_online_0.png", 13)], phone),
+        (rec / "sentence.mp4", "Sentence test on the phone", "30 clips played as 10 sentences through the live pipeline: 20 of 30 words right", [(10, 60, 4.6), (rec / "result_sentence.png", 8), (60, 110.5, 4.6)], phone),
+        (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 120, 1.0), (rec / "result_builtin.png", 14)], phone),
         (rec / "terminal.mp4", "predict() for the evaluators, offline", "python main.py on 9 web clips: 6 right; model 6.2 MB + 0.23 MB sign gate", [(0, dur(rec / "terminal.mp4"), 1.0)], (1274, 900)),
     ]
     targets = json.loads(a.targets) if a.targets else [None] * len(steps)

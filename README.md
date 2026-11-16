@@ -14,7 +14,7 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 ![Python](https://img.shields.io/badge/python-3.11-555)
 
 **[Download the app](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)** ·
-**[Demo video](submission/Palmcast_walkthrough.mp4)** ·
+**[Demo video](submission/Palmcast_demo_final.mp4)** ·
 **[Slides](submission/Palmcast_XR_Hackathon_Track02.pptx)** ·
 **[User guide](docs/USER_GUIDE.md)** ·
 **[Technical record](docs/DETAILS.md)**
@@ -48,8 +48,8 @@ Each GIF is the live pipeline on test signers that were never in training: the h
 
 All three are screen recordings of the release APK on the Android emulator
 (the laptop camera is the phone camera).
-**[Walkthrough video, 2:54](submission/Palmcast_walkthrough.mp4)**: real
-screen recordings only - live camera, sentences forming, a web video uploaded
+**[Demo video, 2:55, with voice-over](submission/Palmcast_demo_final.mp4)**: real
+screen recordings only - live camera, the on-device architecture, signers the model never saw, a web video uploaded
 into the app, the sentence test, the built-in test and `predict()`
 ([speech script](submission/SPEECH_SCRIPT.md)).
 

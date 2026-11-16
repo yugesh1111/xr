@@ -481,13 +481,13 @@ def build(template, out, team, college, members):
     # 11 - demo & local setup
     sl = s[11]
     # the walkthrough video itself, playable in PowerPoint (click to play)
-    vid = sl.shapes.add_movie(str(ROOT / "submission" / "Palmcast_walkthrough.mp4"), Inches(0.45), Inches(1.05),
+    vid = sl.shapes.add_movie(str(ROOT / "submission" / "Palmcast_demo_final.mp4"), Inches(0.45), Inches(1.05),
                               Inches(5.25), Inches(5.25 * 9 / 16),
                               poster_frame_image=str(MEDIA / "walkthrough_poster.png"), mime_type="video/mp4")
     vid.name = "Walkthrough video"
     text(sl, 0.45, 4.1, 5.25, 1.3, [
-        "Live phone camera · sentences forming · a web video uploaded · sentence test 20/30 · built-in test 9/10 · predict().",
-        "Real screen recordings only, 2:55. File: submission/Palmcast_walkthrough.mp4.",
+        "Live phone camera, the on-device architecture, signers the model never saw, a web clip, sentence test 20/30, built-in test 9/10, predict().",
+        "Real screen recordings with our voice-over, 2:55. File: submission/Palmcast_demo_final.mp4.",
     ], size=11, bullets=True, space_after=4, name="Demo points")
     box(sl, 5.9, 1.05, 3.65, 4.25, name="Setup box")
     text(sl, 6.05, 1.12, 3.4, 0.35, [[("Local setup", {"bold": True, "size": 14, "color": AMBER})]])

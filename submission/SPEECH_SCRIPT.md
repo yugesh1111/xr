@@ -1,7 +1,6 @@
 # Speech script - Palmcast walkthrough (2:55)
 
-For `submission/Palmcast_walkthrough.mp4`. Six parts, one recording each (`part1` ... `part6`);
-`submission/add_voiceover.py --voice <folder>` puts them on the video. Read it like you are explaining it
+Recorded and edited into `submission/Palmcast_demo_final.mp4` (`submission/mix_voice.py`). Read it like you are explaining it
 to a friend; the video waits if a part runs long. Editable copy: Palmcast_Voiceover_Script.docx (in the submission package).
 
 ### Part 1 - Live on the phone  (screen: you signing "help" · about 14 s)
