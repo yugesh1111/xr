@@ -29,6 +29,16 @@ answer by voice, and their words appear as captions. Everything runs on the
 phone: the app has no internet permission, so video of people never leaves the
 device.
 
+## Palmcast reading people it has never seen
+
+Each GIF is the live pipeline on test signers that were never in training: the hands are tracked, each sign is cut out at a pause, and the words join into a sentence.
+
+| "Son play basketball" | "Woman drink hot" |
+|:---:|:---:|
+| ![son play basketball](docs/media/live_son_play_basketball.gif) | ![woman drink hot](docs/media/live_woman_drink_hot.gif) |
+| **"Hat blue white"** | **"Eat candy"** |
+| ![hat blue white](docs/media/live_hat_blue_white.gif) | ![eat candy](docs/media/live_eat_candy.gif) |
+
 ## See it work
 
 | Live: signing "help" | Online ASL video uploaded into the app | 30-clip sentence test |
