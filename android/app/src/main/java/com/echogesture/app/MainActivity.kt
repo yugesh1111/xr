@@ -36,6 +36,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.camera.core.Camera
+import com.echogesture.core.CustomSigns
 import com.echogesture.core.LandmarkFilter
 import com.echogesture.core.Layout
 import com.echogesture.core.Segmenter
@@ -89,6 +90,12 @@ class MainActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var testButton: Button
     private var demoClose = false
+    /** "asl" or "isl": which sign language the app reads (remembered between launches). */
+    private var lang = "asl"
+    /** Signs the user taught, per language (their embeddings are in that language's model space). */
+    private val custom = CustomSigns()
+    private var teachWord: String? = null
+    private var teachDone = 0
     private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) runTest { t -> t.pick(uri) { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
     }
@@ -116,6 +123,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.flip).setOnClickListener {
             backCamera = !backCamera; prefs.edit().putBoolean("backCamera", backCamera).apply(); startCamera()
         }
+        lang = prefs.getString("lang", "asl") ?: "asl"
+        hud.language = lang.uppercase()
         findViewById<Button>(R.id.now).setOnClickListener { recognizeNow() }
         findViewById<Button>(R.id.speak).setOnClickListener {
             speak = !speak
@@ -130,14 +139,21 @@ class MainActivity : AppCompatActivity() {
         testButton = findViewById(R.id.test)
         testButton.setOnClickListener {
             if (testing) { cancelTest = true; hud.status = "Stopping the test…"; hud.invalidate(); return@setOnClickListener }
+            val isl = lang == "isl"
             AlertDialog.Builder(this).setTitle("Test and measure")
-                .setItems(arrayOf("Built-in WLASL test clips", "Sentence test (dataset clips, live pipeline)", "Pick a video…",
-                    if (benchRunning) "Stop measuring and save results" else "Measure speed, power and heat (10 min)")) { _, which ->
+                .setItems(arrayOf(if (isl) "Built-in INCLUDE (ISL) test clips" else "Built-in WLASL test clips",
+                    "Sentence test (ASL dataset clips, live pipeline)", "Pick a video…",
+                    if (benchRunning) "Stop measuring and save results" else "Measure speed, power and heat (10 min)",
+                    "Teach the phone a new sign…", "Signs you taught (${custom.words.size})…",
+                    if (isl) "Switch to American Sign Language (ASL)" else "Switch to Indian Sign Language (ISL)")) { _, which ->
                     when (which) {
                         0 -> runTest { t -> t.builtIn { msg -> runOnUiThread { hud.status = msg; hud.invalidate() } } }
-                        1 -> runSentenceTest()
+                        1 -> if (isl) Toast.makeText(this, "The sentence test uses ASL clips. Switch to ASL first.", Toast.LENGTH_LONG).show() else runSentenceTest()
                         2 -> pickVideo.launch(arrayOf("video/*"))
-                        else -> toggleBench()
+                        3 -> toggleBench()
+                        4 -> askTeach()
+                        5 -> showTaught()
+                        else -> switchLanguage(if (isl) "asl" else "isl")
                     }
                 }.show()
         }
@@ -157,7 +173,8 @@ class MainActivity : AppCompatActivity() {
         worker.execute {
             // try the GPU first, fall back to CPU if this phone's GPU delegate fails
             landmarks = runCatching { Landmarks(this, gpu = true, checkEvery = 5) }.getOrElse { Landmarks(this, gpu = false, checkEvery = 5) }
-            recognizer = Recognizer(this, nnapi = false)
+            recognizer = Recognizer(this, nnapi = false, prefix = prefixOf(lang))
+            loadCustom()
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) startCamera()
         else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 1)
@@ -305,9 +322,94 @@ class MainActivity : AppCompatActivity() {
     private fun confident(r: Recognizer.Result) =
         r.probs[0] >= SHOW_MIN_PROB && r.probs[0] - r.probs.getOrElse(1) { 0f } >= SHOW_MIN_MARGIN
 
+    private fun prefixOf(l: String) = if (l == "isl") "isl_" else ""
+    private fun customFile() = java.io.File(filesDir, "taught_$lang.json")
+
+    private fun loadCustom() {
+        custom.clear()
+        custom.background = runCatching { CustomSigns.readBank(assets.open("${prefixOf(lang)}embed_bg.bin").readBytes()) }
+            .getOrDefault(emptyArray())
+        runCatching { customFile().takeIf { it.exists() }?.let { custom.loadJson(it.readText()) } }
+    }
+
+    private fun switchLanguage(l: String) {
+        teachWord = null; hud.teaching = null
+        worker.execute {
+            val old = recognizer
+            recognizer = null
+            old?.close()
+            lang = l
+            recognizer = Recognizer(this, nnapi = false, prefix = prefixOf(l))
+            loadCustom()
+            segmenter.reset(); smoother.reset()
+            runOnUiThread {
+                getPreferences(MODE_PRIVATE).edit().putString("lang", l).apply()
+                hud.language = l.uppercase(); hud.word = ""
+                sentence.clear(); conversation.clear(); refreshTalk()
+                val n = recognizer?.vocab?.size ?: 0
+                Toast.makeText(this, if (l == "isl") "Indian Sign Language: $n words" else "American Sign Language: $n words", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /** Teach a sign: the user types the word, then signs it [CustomSigns.SHOTS] times.
+     *  Each sign the segmenter cuts is stored as an embedding; nothing is retrained. */
+    private fun askTeach() {
+        if (recognizer?.canLearn != true) { Toast.makeText(this, "This build has no embedding model", Toast.LENGTH_LONG).show(); return }
+        val input = android.widget.EditText(this).apply { hint = "Word, e.g. water"; isSingleLine = true }
+        AlertDialog.Builder(this).setTitle("Teach a new sign")
+            .setMessage("Type the word, tap Start, then sign it ${CustomSigns.SHOTS} times with a short pause (hands down) between.")
+            .setView(input)
+            .setPositiveButton("Start") { _, _ ->
+                val w = input.text.toString().trim().uppercase()
+                if (w.isEmpty()) return@setPositiveButton
+                custom.remove(w)
+                teachWord = w; teachDone = 0
+                hud.teaching = "Teach $w: sign it (1 of ${CustomSigns.SHOTS})"; hud.word = ""; hud.invalidate()
+            }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    private fun showTaught() {
+        val words = custom.words
+        if (words.isEmpty()) { Toast.makeText(this, "No taught signs yet. Test > Teach the phone a new sign", Toast.LENGTH_LONG).show(); return }
+        AlertDialog.Builder(this).setTitle("Signs you taught (${lang.uppercase()})")
+            .setItems(words.map { "$it  (${custom.count(it)} recordings) - tap to forget" }.toTypedArray()) { _, i ->
+                custom.remove(words[i]); runCatching { customFile().writeText(custom.toJson()) }
+                Toast.makeText(this, "Forgot ${words[i].lowercase()}", Toast.LENGTH_SHORT).show()
+            }.setPositiveButton("Close", null).show()
+    }
+
     private fun show(frames: List<FloatArray>) {
         val rec = recognizer ?: return
         val r = rec.recognize(frames)
+        teachWord?.let { w ->
+            val e = r.embedding ?: return
+            runOnUiThread {
+                if (teachWord != w) return@runOnUiThread
+                custom.add(w, e); teachDone++
+                if (teachDone >= CustomSigns.SHOTS) {
+                    teachWord = null; hud.teaching = null
+                    runCatching { customFile().writeText(custom.toJson()) }
+                    Toast.makeText(this, "Learned ${w.lowercase()}. Sign it any time.", Toast.LENGTH_LONG).show()
+                } else hud.teaching = "Teach $w: again (${teachDone + 1} of ${CustomSigns.SHOTS})"
+                hud.invalidate()
+            }
+            return
+        }
+        // a taught sign wins when it is close to one of its recordings; it gets 100% in the caption logic
+        val taught = r.embedding?.let { custom.match(it) }
+        if (taught != null) {
+            android.util.Log.i("Palmcast", "segment ${frames.size} frames -> taught ${taught.word} sim=${"%.2f".format(taught.similarity)} margin=${"%.2f".format(taught.margin)}")
+            runOnUiThread {
+                hud.word = taught.word; hud.confidence = taught.similarity; hud.alternatives = emptyList(); hud.guess = false
+                hud.shownAtMs = SystemClock.uptimeMillis()
+                sentence.add(taught.word, SystemClock.uptimeMillis()); refreshTalk()
+                if (speak) say(taught.word.lowercase())
+                hud.invalidate()
+            }
+            return
+        }
         stats.inference(r.featureMs, r.modelMs)
         android.util.Log.i("Palmcast", "segment ${frames.size} frames -> ${r.words[0]} ${"%.2f".format(r.probs[0])} / ${r.words.getOrNull(1)} ${"%.2f".format(r.probs.getOrElse(1) { 0f })} sign=${"%.2f".format(r.signProb)}")
         runOnUiThread {

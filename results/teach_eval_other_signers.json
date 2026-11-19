@@ -1,0 +1,821 @@
+{
+ "checkpoint": "runs/f_base/best.pt",
+ "words_taught": 10,
+ "shots": 3,
+ "trials": 40,
+ "test_clips_taught": 4800,
+ "test_clips_other": 4800,
+ "same_signer": false,
+ "center": 0,
+ "background": 1000,
+ "nearest_neighbour_top1": 0.525,
+ "chosen": {
+  "similarity": 0.65,
+  "margin": -0.05,
+  "recall": 0.158125,
+  "wrong_word": 0.0425,
+  "false_accept": 0.0475
+ },
+ "max_false_accept": 0.05,
+ "table": [
+  {
+   "similarity": 0.5,
+   "margin": -0.05,
+   "recall": 0.19854166666666667,
+   "wrong_word": 0.065,
+   "false_accept": 0.084375
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.0,
+   "recall": 0.12541666666666668,
+   "wrong_word": 0.03333333333333333,
+   "false_accept": 0.035625
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.02,
+   "recall": 0.10145833333333333,
+   "wrong_word": 0.021875,
+   "false_accept": 0.024791666666666667
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.05,
+   "recall": 0.071875,
+   "wrong_word": 0.012916666666666667,
+   "false_accept": 0.011666666666666667
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.08,
+   "recall": 0.049791666666666665,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.525,
+   "margin": -0.05,
+   "recall": 0.19666666666666666,
+   "wrong_word": 0.06479166666666666,
+   "false_accept": 0.0825
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.0,
+   "recall": 0.12520833333333334,
+   "wrong_word": 0.03333333333333333,
+   "false_accept": 0.035
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.02,
+   "recall": 0.10125,
+   "wrong_word": 0.021875,
+   "false_accept": 0.024791666666666667
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.05,
+   "recall": 0.071875,
+   "wrong_word": 0.012916666666666667,
+   "false_accept": 0.011666666666666667
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.08,
+   "recall": 0.049791666666666665,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.55,
+   "margin": -0.05,
+   "recall": 0.19416666666666665,
+   "wrong_word": 0.06291666666666666,
+   "false_accept": 0.07854166666666666
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.0,
+   "recall": 0.12479166666666666,
+   "wrong_word": 0.03208333333333333,
+   "false_accept": 0.034791666666666665
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.02,
+   "recall": 0.10104166666666667,
+   "wrong_word": 0.021458333333333333,
+   "false_accept": 0.024791666666666667
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.05,
+   "recall": 0.071875,
+   "wrong_word": 0.012916666666666667,
+   "false_accept": 0.011666666666666667
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.08,
+   "recall": 0.049791666666666665,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.575,
+   "margin": -0.05,
+   "recall": 0.19020833333333334,
+   "wrong_word": 0.06,
+   "false_accept": 0.07104166666666667
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.0,
+   "recall": 0.123125,
+   "wrong_word": 0.03166666666666667,
+   "false_accept": 0.03375
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.02,
+   "recall": 0.1,
+   "wrong_word": 0.02125,
+   "false_accept": 0.024166666666666666
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.05,
+   "recall": 0.07166666666666667,
+   "wrong_word": 0.012708333333333334,
+   "false_accept": 0.011458333333333333
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.08,
+   "recall": 0.049791666666666665,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.6,
+   "margin": -0.05,
+   "recall": 0.18125,
+   "wrong_word": 0.057291666666666664,
+   "false_accept": 0.06458333333333334
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.0,
+   "recall": 0.12041666666666667,
+   "wrong_word": 0.030416666666666668,
+   "false_accept": 0.031875
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.02,
+   "recall": 0.09875,
+   "wrong_word": 0.020833333333333332,
+   "false_accept": 0.023333333333333334
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.05,
+   "recall": 0.07145833333333333,
+   "wrong_word": 0.012708333333333334,
+   "false_accept": 0.011041666666666667
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.08,
+   "recall": 0.04958333333333333,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.625,
+   "margin": -0.05,
+   "recall": 0.17104166666666668,
+   "wrong_word": 0.05125,
+   "false_accept": 0.0575
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.0,
+   "recall": 0.11791666666666667,
+   "wrong_word": 0.028541666666666667,
+   "false_accept": 0.029791666666666668
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.02,
+   "recall": 0.09645833333333333,
+   "wrong_word": 0.019375,
+   "false_accept": 0.022083333333333333
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.05,
+   "recall": 0.07020833333333333,
+   "wrong_word": 0.012083333333333333,
+   "false_accept": 0.010833333333333334
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.08,
+   "recall": 0.049166666666666664,
+   "wrong_word": 0.005833333333333334,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.12,
+   "recall": 0.024583333333333332,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.65,
+   "margin": -0.05,
+   "recall": 0.158125,
+   "wrong_word": 0.0425,
+   "false_accept": 0.0475
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.0,
+   "recall": 0.11125,
+   "wrong_word": 0.024583333333333332,
+   "false_accept": 0.026458333333333334
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.02,
+   "recall": 0.09291666666666666,
+   "wrong_word": 0.0175,
+   "false_accept": 0.019583333333333335
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.05,
+   "recall": 0.06791666666666667,
+   "wrong_word": 0.011666666666666667,
+   "false_accept": 0.01
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.08,
+   "recall": 0.04833333333333333,
+   "wrong_word": 0.005625,
+   "false_accept": 0.0060416666666666665
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.12,
+   "recall": 0.024375,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.002916666666666667
+  },
+  {
+   "similarity": 0.675,
+   "margin": -0.05,
+   "recall": 0.14333333333333334,
+   "wrong_word": 0.03270833333333333,
+   "false_accept": 0.03895833333333333
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.0,
+   "recall": 0.10458333333333333,
+   "wrong_word": 0.019791666666666666,
+   "false_accept": 0.022083333333333333
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.02,
+   "recall": 0.08833333333333333,
+   "wrong_word": 0.014375,
+   "false_accept": 0.016875
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.05,
+   "recall": 0.06541666666666666,
+   "wrong_word": 0.010416666666666666,
+   "false_accept": 0.009166666666666667
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.08,
+   "recall": 0.04708333333333333,
+   "wrong_word": 0.005625,
+   "false_accept": 0.005625
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.12,
+   "recall": 0.024166666666666666,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.0027083333333333334
+  },
+  {
+   "similarity": 0.7,
+   "margin": -0.05,
+   "recall": 0.121875,
+   "wrong_word": 0.026875,
+   "false_accept": 0.027916666666666666
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.0,
+   "recall": 0.09291666666666666,
+   "wrong_word": 0.017708333333333333,
+   "false_accept": 0.017916666666666668
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.02,
+   "recall": 0.07916666666666666,
+   "wrong_word": 0.012916666666666667,
+   "false_accept": 0.014375
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.05,
+   "recall": 0.059583333333333335,
+   "wrong_word": 0.009166666666666667,
+   "false_accept": 0.008541666666666666
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.08,
+   "recall": 0.043541666666666666,
+   "wrong_word": 0.005,
+   "false_accept": 0.005625
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.12,
+   "recall": 0.022291666666666668,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.0027083333333333334
+  },
+  {
+   "similarity": 0.725,
+   "margin": -0.05,
+   "recall": 0.10125,
+   "wrong_word": 0.020416666666666666,
+   "false_accept": 0.019583333333333335
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.0,
+   "recall": 0.07958333333333334,
+   "wrong_word": 0.01375,
+   "false_accept": 0.013541666666666667
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.02,
+   "recall": 0.06895833333333333,
+   "wrong_word": 0.010416666666666666,
+   "false_accept": 0.010416666666666666
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.05,
+   "recall": 0.0525,
+   "wrong_word": 0.0075,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.08,
+   "recall": 0.03854166666666667,
+   "wrong_word": 0.004791666666666666,
+   "false_accept": 0.004583333333333333
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.12,
+   "recall": 0.02020833333333333,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.0020833333333333333
+  },
+  {
+   "similarity": 0.75,
+   "margin": -0.05,
+   "recall": 0.083125,
+   "wrong_word": 0.014166666666666666,
+   "false_accept": 0.015416666666666667
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.0,
+   "recall": 0.06729166666666667,
+   "wrong_word": 0.010208333333333333,
+   "false_accept": 0.010833333333333334
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.02,
+   "recall": 0.059375,
+   "wrong_word": 0.008125,
+   "false_accept": 0.008541666666666666
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.05,
+   "recall": 0.04666666666666667,
+   "wrong_word": 0.00625,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.08,
+   "recall": 0.034583333333333334,
+   "wrong_word": 0.004166666666666667,
+   "false_accept": 0.003958333333333334
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.12,
+   "recall": 0.018333333333333333,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.001875
+  },
+  {
+   "similarity": 0.775,
+   "margin": -0.05,
+   "recall": 0.06104166666666667,
+   "wrong_word": 0.008333333333333333,
+   "false_accept": 0.010625
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.0,
+   "recall": 0.051875,
+   "wrong_word": 0.00625,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.02,
+   "recall": 0.04666666666666667,
+   "wrong_word": 0.005833333333333334,
+   "false_accept": 0.005625
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.05,
+   "recall": 0.038125,
+   "wrong_word": 0.004375,
+   "false_accept": 0.004166666666666667
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.08,
+   "recall": 0.027916666666666666,
+   "wrong_word": 0.003125,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.12,
+   "recall": 0.015416666666666667,
+   "wrong_word": 0.0014583333333333334,
+   "false_accept": 0.0014583333333333334
+  },
+  {
+   "similarity": 0.8,
+   "margin": -0.05,
+   "recall": 0.0425,
+   "wrong_word": 0.004791666666666666,
+   "false_accept": 0.00625
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.0,
+   "recall": 0.03666666666666667,
+   "wrong_word": 0.00375,
+   "false_accept": 0.003958333333333334
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.02,
+   "recall": 0.03333333333333333,
+   "wrong_word": 0.0035416666666666665,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.05,
+   "recall": 0.026875,
+   "wrong_word": 0.0025,
+   "false_accept": 0.0022916666666666667
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.08,
+   "recall": 0.021875,
+   "wrong_word": 0.0016666666666666668,
+   "false_accept": 0.0020833333333333333
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.12,
+   "recall": 0.012291666666666666,
+   "wrong_word": 0.0010416666666666667,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.825,
+   "margin": -0.05,
+   "recall": 0.028958333333333332,
+   "wrong_word": 0.0020833333333333333,
+   "false_accept": 0.005
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.0,
+   "recall": 0.025833333333333333,
+   "wrong_word": 0.0014583333333333334,
+   "false_accept": 0.0027083333333333334
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.02,
+   "recall": 0.02375,
+   "wrong_word": 0.00125,
+   "false_accept": 0.0025
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.05,
+   "recall": 0.019375,
+   "wrong_word": 0.000625,
+   "false_accept": 0.0016666666666666668
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.08,
+   "recall": 0.015833333333333335,
+   "wrong_word": 0.000625,
+   "false_accept": 0.0016666666666666668
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.12,
+   "recall": 0.009375,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.000625
+  },
+  {
+   "similarity": 0.85,
+   "margin": -0.05,
+   "recall": 0.01625,
+   "wrong_word": 0.0014583333333333334,
+   "false_accept": 0.0020833333333333333
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.0,
+   "recall": 0.015625,
+   "wrong_word": 0.0010416666666666667,
+   "false_accept": 0.00125
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.02,
+   "recall": 0.014375,
+   "wrong_word": 0.0008333333333333334,
+   "false_accept": 0.00125
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.05,
+   "recall": 0.012083333333333333,
+   "wrong_word": 0.000625,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.08,
+   "recall": 0.009791666666666667,
+   "wrong_word": 0.000625,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.12,
+   "recall": 0.00625,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.875,
+   "margin": -0.05,
+   "recall": 0.007916666666666667,
+   "wrong_word": 0.000625,
+   "false_accept": 0.0010416666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.0,
+   "recall": 0.0077083333333333335,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.02,
+   "recall": 0.007083333333333333,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.05,
+   "recall": 0.0060416666666666665,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.08,
+   "recall": 0.005416666666666667,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.12,
+   "recall": 0.0027083333333333334,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": -0.05,
+   "recall": 0.0025,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.0,
+   "recall": 0.0025,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.02,
+   "recall": 0.0020833333333333333,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.05,
+   "recall": 0.001875,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.08,
+   "recall": 0.0014583333333333334,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.12,
+   "recall": 0.0010416666666666667,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": -0.05,
+   "recall": 0.0010416666666666667,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.0,
+   "recall": 0.0010416666666666667,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.02,
+   "recall": 0.0008333333333333334,
+   "wrong_word": 0.0004166666666666667,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.05,
+   "recall": 0.000625,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.08,
+   "recall": 0.000625,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.12,
+   "recall": 0.0004166666666666667,
+   "wrong_word": 0.00020833333333333335,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": -0.05,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.0,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.02,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.05,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.08,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.12,
+   "recall": 0.00020833333333333335,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  }
+ ],
+ "note": "Kaggle ASL Signs, signs outside the model vocabulary; taught by one signer, tested on other signers"
+}

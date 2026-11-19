@@ -25,8 +25,9 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 
 ---
 
-Point a phone at someone signing American Sign Language and their words appear
-on screen, one sign at a time, and can be spoken aloud. The hearing person can
+Point a phone at someone signing American Sign Language, or Indian Sign
+Language, and their words appear on screen, one sign at a time, and can be
+spoken aloud. Users can also teach the phone their own signs in a few seconds. The hearing person can
 answer by voice, and their words appear as captions. Everything runs on the
 phone: the app has no internet permission, so video of people never leaves the
 device.
@@ -89,6 +90,42 @@ Targets from the Track 02 brief; the file the judges read is
 \* 10-minute sustained run of the full pipeline on a laptop CPU (Apple M5,
 [`scripts/sustained_run.py`](scripts/sustained_run.py)), not a phone. The app's
 **Test → Measure** mode records the same numbers, and power, on a phone.
+
+## Indian Sign Language, and signs you teach the phone
+
+**ISL mode** (Test → Switch to Indian Sign Language). A second word model for
+the 50 words of [INCLUDE-50](https://zenodo.org/records/4010759) (AI4Bharat,
+CC BY 4.0), signed by deaf students of St. Louis School for the Deaf, Adyar,
+Chennai. Same pipeline as ASL; only the training data changes.
+
+| ISL test | Result |
+|---|---|
+| INCLUDE-50 official test split (192 clips; same studio and signers as training) | **99.0%** top-1 |
+| **Signers from outside INCLUDE**: 40 single-word ISL videos from YouTube dictionary channels, 26 words, used only for testing and scored once ([list](results/isl_external_clips.csv)) | **45.0%** top-1 (95% CI 31-60%), **72.5%** top-5; chance is 2% |
+| Built-in ISL test on the phone (10 INCLUDE test clips) | **10 of 10**, same answer as Python on all 10 |
+| ISL word model | 3-network ensemble, **4.4 MB** INT8, 1.8 ms per sign on a laptop CPU |
+
+The 99% is the easy case. On new people the ISL model is at 45%: INCLUDE has
+only a handful of signers, all from one school, and ISL signs vary between
+regions (several YouTube channels show two variants of the same word). More
+signers in training is the fix; the app and pipeline do not change.
+
+**Teach the phone a new sign** (Test → Teach the phone a new sign). Type the
+word and sign it 3 times. The phone keeps the word model's embedding of each
+recording (192 numbers) and from then on recognises that sign, with no
+retraining and nothing leaving the phone. A bank of 1,000 ordinary signs that
+ships with the app keeps everyday signing from being taken for a taught word
+([`CustomSigns.kt`](android/app/src/main/java/com/echogesture/core/CustomSigns.kt),
+[`eval_teach.py`](scripts/eval_teach.py)). Measured on Kaggle ASL signs the
+model never trained on, 10 words taught at a time, 40 trials:
+
+| Who signs it later | Nearest taught word right | Shown, right word | Shown, wrong word | Untaught sign taken for a taught one |
+|---|---|---|---|---|
+| The person who taught it | 86.5% | **60.8%** | 1.7% | 4.9% |
+| Someone else | 52.5% | 15.8% | 4.2% | 4.8% |
+
+So it is a personal feature: teach your own name sign or a home sign, and the
+phone learns it from you.
 
 ## What the track asks for, and where it is
 
@@ -168,7 +205,9 @@ makes it indifferent to background, clothing and skin tone.
 | Phone at arm's length / very close / signer at ½ and ⅓ size | 71.9% / 40.7% (app asks to move back) / 76.9% / 77.2% |
 | Kotlin features vs Python | max difference ~1e-6 |
 | Kotlin landmark filter vs Python | max difference 2.4e-7 |
-| Unit tests: `pytest` (16), Android `FeaturesTest`, `EnhanceTest`, `SegmenterTest`, `SentenceTest`, `LandmarkFilterTest` | all pass |
+| ISL: INCLUDE-50 test / outside signers from YouTube / built-in on the phone | 99.0% / **45.0%** (top-5 72.5%) / 10 of 10 |
+| Teach a sign (3 recordings), same person / another person | 60.8% / 15.8% shown right, under 5% false accepts |
+| Unit tests: `pytest` (16), Android `FeaturesTest`, `EnhanceTest`, `SegmenterTest`, `SentenceTest`, `LandmarkFilterTest`, `CustomSignsTest` | all pass |
 
 **Honest notes.** The training recipe was chosen after seeing earlier held-out
 results, so 78.1% is slightly optimistic. WLASL has only ~10 clips per word, so

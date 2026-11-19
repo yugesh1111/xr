@@ -1,0 +1,18 @@
+{
+ "fp32": {
+  "size_mb": 14.63,
+  "top1": 0.987,
+  "top5": 1.0,
+  "latency_p50_ms": 1.778,
+  "latency_p95_ms": 1.799
+ },
+ "int8": {
+  "size_mb": 4.43,
+  "top1": 0.987,
+  "top5": 1.0,
+  "latency_p50_ms": 1.799,
+  "latency_p95_ms": 1.82
+ },
+ "val_clips": 77,
+ "note": "latency = classifier only, 1 CPU thread on the export machine; re-measure on the phone"
+}

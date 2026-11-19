@@ -24,17 +24,17 @@ class VideoTester(private val context: Context, private val recognizer: Recogniz
                    val confidence: Float, val frames: Int, val landmarkMsPerFrame: Double, val modelMs: Double)
 
     fun builtIn(progress: (String) -> Unit): List<Row> {
-        val list = JSONArray(context.assets.open("test_clips.json").bufferedReader().readText())
+        val list = JSONArray(context.assets.open("${recognizer.prefix}test_clips.json").bufferedReader().readText())
         // skip clips whose video was not packaged (the videos are not in git; a build
         // made without data/wlasl/raw/ has the list but not every file)
-        val bundled = context.assets.list("test_clips")?.toSet() ?: emptySet()
+        val bundled = context.assets.list("${recognizer.prefix}test_clips")?.toSet() ?: emptySet()
         val ids = (0 until list.length()).map { list.getJSONObject(it) }.filter { "${it.getString("video_id")}.mp4" in bundled }
         val rows = ArrayList<Row>()
         for ((i, c) in ids.withIndex()) {
             if (cancelled()) break
             val id = c.getString("video_id")
             val r = MediaMetadataRetriever()
-            context.assets.openFd("test_clips/$id.mp4").use { r.setDataSource(it.fileDescriptor, it.startOffset, it.length) }
+            context.assets.openFd("${recognizer.prefix}test_clips/$id.mp4").use { r.setDataSource(it.fileDescriptor, it.startOffset, it.length) }
             rows += run(r, id, c.getString("gloss"), c.getString("python")) { done, total ->
                 progress("Testing clip ${i + 1} of ${ids.size}, frame $done of $total")
             } ?: break

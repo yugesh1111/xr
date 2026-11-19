@@ -13,8 +13,8 @@ android {
         applicationId = "com.echogesture.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "1.1"
     }
     // one APK per CPU type: arm64-v8a for current Galaxy phones/tablets,
     // armeabi-v7a for older 32-bit devices, x86_64 for the Android emulator
@@ -51,6 +51,7 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:1.2.2")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")  // real org.json for JVM unit tests (CustomSignsTest)
 }
 
 // Copy the trained model + vocabulary from the repo's models/ folder, and the
@@ -63,8 +64,11 @@ val prepareAssets by tasks.registering {
         for (name in listOf("model_int8.onnx", "model_meta.json")) {
             modelsDir.resolve(name).copyTo(assetsDir.resolve(name), overwrite = true)
         }
-        // optional sign gate (scripts/train_gate.py)
-        for (name in listOf("gate_int8.onnx", "gate_meta.json")) {
+        // optional: sign gate (scripts/train_gate.py), embedding model + background bank for
+        // taught signs (scripts/export_embed.py), and the Indian Sign Language models (isl_*)
+        for (name in listOf("gate_int8.onnx", "gate_meta.json", "embed.onnx", "embed_bg.bin",
+                            "isl_model_int8.onnx", "isl_model_meta.json", "isl_gate_int8.onnx", "isl_gate_meta.json",
+                            "isl_embed.onnx", "isl_embed_bg.bin")) {
             val f = modelsDir.resolve(name)
             if (f.exists()) f.copyTo(assetsDir.resolve(name), overwrite = true)
         }
@@ -74,7 +78,9 @@ val prepareAssets by tasks.registering {
         // sentence_clips.json: 3-word sentences; clips cut to the sign by scripts/cut_sentence_clips.py
         for ((listName, srcDir, dstDir) in listOf(
             Triple("test_clips.json", "../data/wlasl/raw", "test_clips"),
-            Triple("sentence_clips.json", "../data/wlasl/sentence_clips", "sentence_clips"))) {
+            Triple("sentence_clips.json", "../data/wlasl/sentence_clips", "sentence_clips"),
+            // INCLUDE-50 test clips, re-encoded small by scripts/make_isl_test_clips.py
+            Triple("isl_test_clips.json", "../data/include50/test_clips", "isl_test_clips"))) {
             val clipList = modelsDir.resolve(listName)
             if (!clipList.exists()) continue
             clipList.copyTo(assetsDir.resolve(listName), overwrite = true)

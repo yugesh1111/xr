@@ -1,0 +1,62 @@
+[
+ {
+  "video_id": "Places_35_Bank_MVI_3581",
+  "gloss": "BANK",
+  "python": "BANK",
+  "python_conf": 0.6583
+ },
+ {
+  "video_id": "Adjectives_83_big_large_MVI_5203",
+  "gloss": "BIG",
+  "python": "BIG",
+  "python_conf": 0.8742
+ },
+ {
+  "video_id": "Colours_54_Black_MVI_5207",
+  "gloss": "BLACK",
+  "python": "BLACK",
+  "python_conf": 0.6672
+ },
+ {
+  "video_id": "Animals_5_Cow_MVI_3016",
+  "gloss": "COW",
+  "python": "COW",
+  "python_conf": 0.8956
+ },
+ {
+  "video_id": "Society_14_Election_MVI_8967",
+  "gloss": "ELECTION",
+  "python": "ELECTION",
+  "python_conf": 0.9301
+ },
+ {
+  "video_id": "Electronics_53_Fan_MVI_5387",
+  "gloss": "FAN",
+  "python": "FAN",
+  "python_conf": 0.6712
+ },
+ {
+  "video_id": "Adjectives_87_hot_MVI_9329",
+  "gloss": "HOT",
+  "python": "HOT",
+  "python_conf": 0.8041
+ },
+ {
+  "video_id": "Adjectives_1_loud_MVI_5259",
+  "gloss": "LOUD",
+  "python": "LOUD",
+  "python_conf": 0.4687
+ },
+ {
+  "video_id": "Colours_47_Red_MVI_4898",
+  "gloss": "RED",
+  "python": "RED",
+  "python_conf": 0.7176
+ },
+ {
+  "video_id": "Seasons_61_Summer_MVI_4568",
+  "gloss": "SUMMER",
+  "python": "SUMMER",
+  "python_conf": 0.6074
+ }
+]

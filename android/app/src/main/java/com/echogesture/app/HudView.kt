@@ -39,6 +39,8 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
     var onClearSentence: (() -> Unit)? = null  // tap on the sentence card
     private var sentenceRect: RectF? = null
     var status = ""       // progress text (test mode); shown when not empty
+    var language = ""     // "ASL" / "ISL": which sign language the app reads, shown as a chip
+    var teaching: String? = null  // "Teach BOOK: 2 of 3" while the user teaches a sign
     var perf = ""         // fps / latency, shown while a bench run is on
     var showPerf = false
     var signing = false
@@ -119,7 +121,9 @@ class HudView(context: Context, attrs: AttributeSet? = null) : View(context, att
             else -> "No hands"
         }
         // left dot = blue skeleton, right dot = orange skeleton
-        chip(c, x + 8 * dp, y, hands, listOf(cLeft to leftHand, cRight to rightHand))
+        val x2 = chip(c, x + 8 * dp, y, hands, listOf(cLeft to leftHand, cRight to rightHand))
+        if (language.isNotEmpty()) chip(c, x2 + 8 * dp, y, language, emptyList())
+        teaching?.let { chip(c, m, y + 38 * dp, it, listOf(cSure to true)); return y + 68 * dp }
         return y + 30 * dp
     }
 

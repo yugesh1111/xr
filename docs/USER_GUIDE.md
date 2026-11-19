@@ -120,6 +120,19 @@ shows the sentence forming. Takes about 2 minutes. Expected: 20 of 30 words.
 
 **Test -> Pick a video...** runs any video on the phone (one word per clip).
 
+**Test -> Switch to Indian Sign Language (ISL).** The app now reads the 50
+INCLUDE words (the chip at the top says ISL; the choice is remembered). In ISL
+mode, **Test -> Built-in INCLUDE (ISL) test clips** runs 10 ISL test videos.
+Expected: 10 of 10, all the same as the computer. The sentence test uses ASL
+clips, so it only runs in ASL mode. Switch back the same way.
+
+**Test -> Teach the phone a new sign.** Type the word (for example your name),
+tap Start, and sign it 3 times with your hands down for a moment between them;
+a chip at the top counts the recordings. Then sign it any time and the word
+appears and is added to the sentence. **Test -> Signs you taught** lists them;
+tap one to forget it. Taught signs are kept per language and never leave the
+phone. Works best when the same person teaches and signs.
+
 ## 6. Measure speed, power and heat (for results.csv)
 
 1. Charge the phone, then **unplug it** (power is read from the battery).

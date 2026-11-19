@@ -1,0 +1,821 @@
+{
+ "checkpoint": "runs/f_base/best.pt",
+ "words_taught": 10,
+ "shots": 3,
+ "trials": 40,
+ "test_clips_taught": 4678,
+ "test_clips_other": 4800,
+ "same_signer": true,
+ "center": 0,
+ "background": 1000,
+ "nearest_neighbour_top1": 0.8653,
+ "chosen": {
+  "similarity": 0.65,
+  "margin": -0.05,
+  "recall": 0.6077383497221035,
+  "wrong_word": 0.017101325352714837,
+  "false_accept": 0.04895833333333333
+ },
+ "max_false_accept": 0.05,
+ "table": [
+  {
+   "similarity": 0.5,
+   "margin": -0.05,
+   "recall": 0.6545532278751603,
+   "wrong_word": 0.02672082086361693,
+   "false_accept": 0.085
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.0,
+   "recall": 0.5583582727661394,
+   "wrong_word": 0.014749893116716546,
+   "false_accept": 0.03625
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.02,
+   "recall": 0.509833262077811,
+   "wrong_word": 0.00983326207781103,
+   "false_accept": 0.026458333333333334
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.05,
+   "recall": 0.4356562633604104,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012916666666666667
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.08,
+   "recall": 0.3589140658401026,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.5,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.525,
+   "margin": -0.05,
+   "recall": 0.6534843950406156,
+   "wrong_word": 0.026507054296707994,
+   "false_accept": 0.083125
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.0,
+   "recall": 0.5581445061992304,
+   "wrong_word": 0.014749893116716546,
+   "false_accept": 0.035625
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.02,
+   "recall": 0.509833262077811,
+   "wrong_word": 0.00983326207781103,
+   "false_accept": 0.026458333333333334
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.05,
+   "recall": 0.4356562633604104,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012916666666666667
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.08,
+   "recall": 0.3589140658401026,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.525,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.55,
+   "margin": -0.05,
+   "recall": 0.6504916631038905,
+   "wrong_word": 0.025651988029072252,
+   "false_accept": 0.07958333333333334
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.0,
+   "recall": 0.5568619067977768,
+   "wrong_word": 0.014322359982898675,
+   "false_accept": 0.035416666666666666
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.02,
+   "recall": 0.5091919623770842,
+   "wrong_word": 0.00983326207781103,
+   "false_accept": 0.026458333333333334
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.05,
+   "recall": 0.4352287302265926,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012916666666666667
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.08,
+   "recall": 0.3589140658401026,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.55,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.575,
+   "margin": -0.05,
+   "recall": 0.6470713980333476,
+   "wrong_word": 0.02394185549380077,
+   "false_accept": 0.07166666666666667
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.0,
+   "recall": 0.5557930739632322,
+   "wrong_word": 0.01410859341598974,
+   "false_accept": 0.034375
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.02,
+   "recall": 0.5085506626763574,
+   "wrong_word": 0.00983326207781103,
+   "false_accept": 0.025833333333333333
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.05,
+   "recall": 0.4352287302265926,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012708333333333334
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.08,
+   "recall": 0.3589140658401026,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.575,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.6,
+   "margin": -0.05,
+   "recall": 0.6376656690893544,
+   "wrong_word": 0.021376656690893545,
+   "false_accept": 0.06604166666666667
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.0,
+   "recall": 0.5521590423257803,
+   "wrong_word": 0.013894826849080803,
+   "false_accept": 0.032916666666666664
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.02,
+   "recall": 0.5057716973065413,
+   "wrong_word": 0.009619495510902095,
+   "false_accept": 0.025
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.05,
+   "recall": 0.4341598973920479,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012291666666666666
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.08,
+   "recall": 0.3584865327062847,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.6,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.625,
+   "margin": -0.05,
+   "recall": 0.622702009405729,
+   "wrong_word": 0.020094057289439932,
+   "false_accept": 0.058958333333333335
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.0,
+   "recall": 0.5442496793501497,
+   "wrong_word": 0.013681060282171868,
+   "false_accept": 0.030833333333333334
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.02,
+   "recall": 0.5004275331338178,
+   "wrong_word": 0.00940572894399316,
+   "false_accept": 0.02375
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.05,
+   "recall": 0.4318084651560496,
+   "wrong_word": 0.003847798204360838,
+   "false_accept": 0.012083333333333333
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.08,
+   "recall": 0.357631466438649,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.007291666666666667
+  },
+  {
+   "similarity": 0.625,
+   "margin": 0.12,
+   "recall": 0.2543822146216332,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0035416666666666665
+  },
+  {
+   "similarity": 0.65,
+   "margin": -0.05,
+   "recall": 0.6077383497221035,
+   "wrong_word": 0.017101325352714837,
+   "false_accept": 0.04895833333333333
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.0,
+   "recall": 0.5365540829414279,
+   "wrong_word": 0.011970927746900385,
+   "false_accept": 0.0275
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.02,
+   "recall": 0.49551090209491233,
+   "wrong_word": 0.008764429243266354,
+   "false_accept": 0.02125
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.05,
+   "recall": 0.4300983326207781,
+   "wrong_word": 0.0036340316374519027,
+   "false_accept": 0.01125
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.08,
+   "recall": 0.35634886703719537,
+   "wrong_word": 0.0017101325352714834,
+   "false_accept": 0.007083333333333333
+  },
+  {
+   "similarity": 0.65,
+   "margin": 0.12,
+   "recall": 0.2535271483539974,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0033333333333333335
+  },
+  {
+   "similarity": 0.675,
+   "margin": -0.05,
+   "recall": 0.5835827276613937,
+   "wrong_word": 0.01453612654980761,
+   "false_accept": 0.04
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.0,
+   "recall": 0.5222317229585293,
+   "wrong_word": 0.010688328345446772,
+   "false_accept": 0.023125
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.02,
+   "recall": 0.4841812740487388,
+   "wrong_word": 0.00790936297563061,
+   "false_accept": 0.018333333333333333
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.05,
+   "recall": 0.4236853356135101,
+   "wrong_word": 0.003420265070542967,
+   "false_accept": 0.010208333333333333
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.08,
+   "recall": 0.35271483539974346,
+   "wrong_word": 0.0017101325352714834,
+   "false_accept": 0.006458333333333333
+  },
+  {
+   "similarity": 0.675,
+   "margin": 0.12,
+   "recall": 0.25203078238563487,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.7,
+   "margin": -0.05,
+   "recall": 0.5485250106883284,
+   "wrong_word": 0.011115861479264643,
+   "false_accept": 0.028958333333333332
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.0,
+   "recall": 0.4963659683625481,
+   "wrong_word": 0.008550662676357419,
+   "false_accept": 0.01875
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.02,
+   "recall": 0.46515604959384355,
+   "wrong_word": 0.006626763574176998,
+   "false_accept": 0.015208333333333334
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.05,
+   "recall": 0.4115006412997007,
+   "wrong_word": 0.0027789653698161608,
+   "false_accept": 0.009166666666666667
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.08,
+   "recall": 0.34587430525865753,
+   "wrong_word": 0.001496365968362548,
+   "false_accept": 0.0060416666666666665
+  },
+  {
+   "similarity": 0.7,
+   "margin": 0.12,
+   "recall": 0.24882428388200087,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.003125
+  },
+  {
+   "similarity": 0.725,
+   "margin": -0.05,
+   "recall": 0.5119709277469003,
+   "wrong_word": 0.008764429243266354,
+   "false_accept": 0.020416666666666666
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.0,
+   "recall": 0.47071398033347583,
+   "wrong_word": 0.006626763574176998,
+   "false_accept": 0.014166666666666666
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.02,
+   "recall": 0.443565626336041,
+   "wrong_word": 0.005130397605814451,
+   "false_accept": 0.011041666666666667
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.05,
+   "recall": 0.39717828131680205,
+   "wrong_word": 0.0025651988029072254,
+   "false_accept": 0.0077083333333333335
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.08,
+   "recall": 0.3371098760153912,
+   "wrong_word": 0.001496365968362548,
+   "false_accept": 0.005
+  },
+  {
+   "similarity": 0.725,
+   "margin": 0.12,
+   "recall": 0.24540401881145787,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0025
+  },
+  {
+   "similarity": 0.75,
+   "margin": -0.05,
+   "recall": 0.4649422830269346,
+   "wrong_word": 0.006626763574176998,
+   "false_accept": 0.015833333333333335
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.0,
+   "recall": 0.43629756306113726,
+   "wrong_word": 0.0055579307396323215,
+   "false_accept": 0.01125
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.02,
+   "recall": 0.4142796066695169,
+   "wrong_word": 0.004489097905087645,
+   "false_accept": 0.008958333333333334
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.05,
+   "recall": 0.3745190252244549,
+   "wrong_word": 0.0025651988029072254,
+   "false_accept": 0.006666666666666667
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.08,
+   "recall": 0.32171868319794783,
+   "wrong_word": 0.001496365968362548,
+   "false_accept": 0.004375
+  },
+  {
+   "similarity": 0.75,
+   "margin": 0.12,
+   "recall": 0.23920478837109876,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0022916666666666667
+  },
+  {
+   "similarity": 0.775,
+   "margin": -0.05,
+   "recall": 0.4202650705429671,
+   "wrong_word": 0.00470286447199658,
+   "false_accept": 0.010625
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.0,
+   "recall": 0.3988884138520735,
+   "wrong_word": 0.004061564771269773,
+   "false_accept": 0.0075
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.02,
+   "recall": 0.38071825566481404,
+   "wrong_word": 0.0032064985036340315,
+   "false_accept": 0.005833333333333334
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.05,
+   "recall": 0.3492945703292005,
+   "wrong_word": 0.0021376656690893546,
+   "false_accept": 0.004375
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.08,
+   "recall": 0.3022659256092347,
+   "wrong_word": 0.001496365968362548,
+   "false_accept": 0.0033333333333333335
+  },
+  {
+   "similarity": 0.775,
+   "margin": 0.12,
+   "recall": 0.23129542539546816,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0016666666666666668
+  },
+  {
+   "similarity": 0.8,
+   "margin": -0.05,
+   "recall": 0.3678922616502779,
+   "wrong_word": 0.0025651988029072254,
+   "false_accept": 0.006458333333333333
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.0,
+   "recall": 0.35335613510047026,
+   "wrong_word": 0.001923899102180419,
+   "false_accept": 0.004166666666666667
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.02,
+   "recall": 0.3394613082513895,
+   "wrong_word": 0.0012825994014536127,
+   "false_accept": 0.0033333333333333335
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.05,
+   "recall": 0.3159469858914066,
+   "wrong_word": 0.0010688328345446773,
+   "false_accept": 0.0025
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.08,
+   "recall": 0.27640017101325354,
+   "wrong_word": 0.0006412997007268063,
+   "false_accept": 0.0022916666666666667
+  },
+  {
+   "similarity": 0.8,
+   "margin": 0.12,
+   "recall": 0.21547669944420692,
+   "wrong_word": 0.00042753313381787086,
+   "false_accept": 0.0010416666666666667
+  },
+  {
+   "similarity": 0.825,
+   "margin": -0.05,
+   "recall": 0.30141085934159895,
+   "wrong_word": 0.0010688328345446773,
+   "false_accept": 0.005208333333333333
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.0,
+   "recall": 0.29157759726378796,
+   "wrong_word": 0.0008550662676357417,
+   "false_accept": 0.002916666666666667
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.02,
+   "recall": 0.2823856348867037,
+   "wrong_word": 0.00042753313381787086,
+   "false_accept": 0.0027083333333333334
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.05,
+   "recall": 0.2672082086361693,
+   "wrong_word": 0.00021376656690893543,
+   "false_accept": 0.001875
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.08,
+   "recall": 0.23663958956819153,
+   "wrong_word": 0.0,
+   "false_accept": 0.001875
+  },
+  {
+   "similarity": 0.825,
+   "margin": 0.12,
+   "recall": 0.18725951261222745,
+   "wrong_word": 0.0,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.85,
+   "margin": -0.05,
+   "recall": 0.23663958956819153,
+   "wrong_word": 0.00042753313381787086,
+   "false_accept": 0.0022916666666666667
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.0,
+   "recall": 0.23257802479692177,
+   "wrong_word": 0.00042753313381787086,
+   "false_accept": 0.0014583333333333334
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.02,
+   "recall": 0.2274476271911073,
+   "wrong_word": 0.00021376656690893543,
+   "false_accept": 0.0014583333333333334
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.05,
+   "recall": 0.21740059854638735,
+   "wrong_word": 0.00021376656690893543,
+   "false_accept": 0.000625
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.08,
+   "recall": 0.19431380932022232,
+   "wrong_word": 0.0,
+   "false_accept": 0.000625
+  },
+  {
+   "similarity": 0.85,
+   "margin": 0.12,
+   "recall": 0.1579734929457033,
+   "wrong_word": 0.0,
+   "false_accept": 0.00020833333333333335
+  },
+  {
+   "similarity": 0.875,
+   "margin": -0.05,
+   "recall": 0.1712270200940573,
+   "wrong_word": 0.0,
+   "false_accept": 0.0010416666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.0,
+   "recall": 0.16973065412569474,
+   "wrong_word": 0.0,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.02,
+   "recall": 0.16737922188969645,
+   "wrong_word": 0.0,
+   "false_accept": 0.0008333333333333334
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.05,
+   "recall": 0.1616075245831552,
+   "wrong_word": 0.0,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.08,
+   "recall": 0.1466438648995297,
+   "wrong_word": 0.0,
+   "false_accept": 0.0004166666666666667
+  },
+  {
+   "similarity": 0.875,
+   "margin": 0.12,
+   "recall": 0.1218469431380932,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": -0.05,
+   "recall": 0.11008978195810175,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.0,
+   "recall": 0.10987601539119282,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.02,
+   "recall": 0.10902094912355707,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.05,
+   "recall": 0.10581445061992305,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.08,
+   "recall": 0.09726378794356563,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.9,
+   "margin": 0.12,
+   "recall": 0.08315519452757589,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": -0.05,
+   "recall": 0.05942710560068405,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.0,
+   "recall": 0.05942710560068405,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.02,
+   "recall": 0.05942710560068405,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.05,
+   "recall": 0.05857203933304831,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.08,
+   "recall": 0.05322787516032493,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.925,
+   "margin": 0.12,
+   "recall": 0.0470286447199658,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": -0.05,
+   "recall": 0.018597691321077383,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.0,
+   "recall": 0.018597691321077383,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.02,
+   "recall": 0.018597691321077383,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.05,
+   "recall": 0.018597691321077383,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.08,
+   "recall": 0.017528858486532708,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  },
+  {
+   "similarity": 0.95,
+   "margin": 0.12,
+   "recall": 0.015391192817443352,
+   "wrong_word": 0.0,
+   "false_accept": 0.0
+  }
+ ],
+ "note": "Kaggle ASL Signs, signs outside the model vocabulary; taught by one signer, tested on other signers"
+}
