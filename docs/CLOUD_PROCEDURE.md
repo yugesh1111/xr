@@ -22,17 +22,19 @@ Done and pushed:
 
 Deliverables checklist (from the brief):
 
+State as of 19 Nov (this file was the working plan from 8 Nov):
+
 | deliverable | state | step |
 |---|---|---|
 | `predict(video_path) -> dict` in `main.py` | done | - |
 | quantized model + conversion script | done (`models/model_int8.onnx`, `scripts/export_onnx.py`) | - |
-| honest headline accuracy (new signers) | **missing** | 1 |
-| `predictions.jsonl` | **missing** | 3 |
-| `results.csv` | **missing** | 5 |
-| Docker | Dockerfile written; build check | 4 |
-| README with reproducible setup | update after steps 1-5 | 6 |
-| phone latency / power / thermal | **missing** | 7 |
-| demo video (max 3 min), presentation | **missing** | 8 |
+| honest headline accuracy (new signers) | done: 78.1% on held-out signers | 1 |
+| `predictions.jsonl` | done (`results/predictions.jsonl`, 201 clips) | 3 |
+| `results.csv` | done (`results/results.csv`, 5 of 6 PASS) | 5 |
+| Docker | done, checked with `--network none` | 4 |
+| README with reproducible setup | done | 6 |
+| phone latency / power / thermal | laptop CPU run done; phone run (Test → Measure) still to do | 7 |
+| demo video (max 3 min), presentation | done: [video](https://youtu.be/fKg2cl0Uf9g) (2:58), deck | 8 |
 
 Before starting: `git pull`, then `python -m pytest tests` (13 tests must pass).
 Read the brief (pages 9-11) once more: if it gives an exact format for

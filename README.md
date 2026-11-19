@@ -12,15 +12,18 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 ![Robustness](https://img.shields.io/badge/robustness%20drop-4.6%20pt-00E5B0)
 ![Offline](https://img.shields.io/badge/network-none-F59E0B)
 ![Python](https://img.shields.io/badge/python-3.11-555)
+[![Demo on YouTube](https://img.shields.io/badge/demo-YouTube%202%3A58-FF0000)](https://youtu.be/fKg2cl0Uf9g)
 
 **[Download the app](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)** ·
-**[Demo video](submission/Palmcast_demo_final.mp4)** ·
+**[Demo video (YouTube)](https://youtu.be/fKg2cl0Uf9g)** ·
 **[Slides](submission/Palmcast_XR_Hackathon_Track02.pptx)** ·
 **[User guide](docs/USER_GUIDE.md)** ·
 **[Screenshots](docs/implementation/README.md)** ·
 **[Technical record](docs/DETAILS.md)**
 
-[![Watch the demo](docs/media/demo_thumbnail.jpg)](submission/Palmcast_demo_final.mp4)
+[![Watch the demo on YouTube](docs/media/demo_thumbnail.jpg)](https://youtu.be/fKg2cl0Uf9g)
+
+*Click the picture to watch the 2:58 demo on YouTube.*
 
 </div>
 
@@ -33,6 +36,37 @@ answer by voice, and their words appear as captions. Everything runs on the
 phone: the app has no internet permission, so video of people never leaves the
 device.
 
+## What it does
+
+Most impressive first. Every number is measured; the files are in [`results/`](results).
+
+1. **Reads people it has never seen.** 100 ASL words (WLASL100): **78.1%** top-1 on signers held out of
+   training, 81.6% on the official test set. Target was 70%.
+2. **Runs entirely on the phone.** No internet permission at all. The ASL word model is **6.2 MB** INT8 (+ a
+   0.23 MB sign gate); **14 ms** per camera frame, well under the 50 ms limit.
+3. **Indian Sign Language too.** One switch in the Test menu: 50 ISL words (INCLUDE-50), **99%** on its test
+   set and **10 of 10** on the phone. On YouTube signers it never saw it is at 45%, and we say so.
+4. **Teach it a new sign.** Type the word, sign it 3 times, and the phone knows it. No retraining, nothing
+   uploaded; meant for your own name sign or home signs.
+5. **Whole sentences, not one word per button press.** Signs are cut at natural pauses and join into a
+   running sentence; a 4 s pause ends it. **20 of 30** words right in the 10-sentence test.
+6. **A real two-way conversation.** Sure words are spoken with an offline voice; the hearing person taps
+   **Reply** and talks, and their words appear as captions.
+7. **Quiet when nobody is signing.** A 0.23 MB sign gate and a jitter filter: resting or fidgeting hands gave
+   **0 false words in 600** tries.
+8. **Holds up in bad video.** Dark, blurry, tilted, low-resolution or partly blocked: only **4.6 points** lost.
+   Torch or a white screen ring in low light, sharpening for blur, a hint when you are too close, 77% with
+   the signer at a third of the size, left-handed signers mirrored.
+9. **Not tied to the camera.** Upload any video and it is read frame by frame: 6 of 9 clips from 9 different
+   websites right.
+10. **The phone and the Python code agree.** Built-in tests replay dataset clips on the phone: ASL **9 of 10**,
+    ISL **10 of 10**, every answer identical to the evaluated Python pipeline.
+11. **Measures itself.** Test → Measure runs 10 minutes and logs latency, power and heat on the phone.
+12. **Ready for the judges.** `predict()` in [`main.py`](main.py), `predictions.jsonl`, `results.csv`,
+    Python 3.11, and a Docker image that runs with `--network none`.
+
+Screenshots of each one: [docs/implementation](docs/implementation/README.md).
+
 ## Submission checklist
 
 | Asked for | Where |
@@ -40,9 +74,9 @@ device.
 | Submission package (`team_name.zip`: `src/` + `results/`) | [`submission/WeCode.zip`](submission/WeCode.zip) |
 | Source code | this repository: [`main.py`](main.py) (`predict()`), [`echogesture/`](echogesture), [`scripts/`](scripts), [`android/`](android) |
 | Presentation | [`submission/Palmcast_XR_Hackathon_Track02.pptx`](submission/Palmcast_XR_Hackathon_Track02.pptx) |
-| Video | [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) (2:58) |
+| Video | **[YouTube](https://youtu.be/fKg2cl0Uf9g)** (2:58), same file in the repository: [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) |
 | README | this page, plus the [user guide](docs/USER_GUIDE.md) and [technical record](docs/DETAILS.md) |
-| APK | [`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) · [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk) |
+| APK | [`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) · [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk) · [emulator APK](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-x86_64-emulator.apk) ([release page](https://github.com/yugesh1111/xr/releases/latest)) |
 | Results | [`results/results.csv`](results/results.csv), [`results/predictions.jsonl`](results/predictions.jsonl) |
 
 ## Palmcast reading people it has never seen
@@ -64,7 +98,7 @@ Each GIF is the live pipeline on test signers that were never in training: the h
 
 All three are screen recordings of the release APK on the Android emulator
 (the laptop camera is the phone camera).
-**[Demo video, 2:58, with voice-over](submission/Palmcast_demo_final.mp4)**: real
+**[Demo video, 2:58, with voice-over](https://youtu.be/fKg2cl0Uf9g)** (on YouTube): real
 screen recordings only - live camera, the on-device architecture, signers the model never saw, a web video uploaded
 into the app, the sentence test, the built-in test, Indian Sign Language mode, teaching the phone a new sign and `predict()`
 ([speech script](submission/SPEECH_SCRIPT.md)).
