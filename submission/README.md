@@ -48,4 +48,6 @@ unplugged, then copy `results_device.csv` into `results/` and rerun `scripts/mak
 python submission/make_slides.py --template Submission_Final_forGithub.pptx
 python live.py --demo --fast --mute --save laptop.mp4
 python submission/make_walkthrough.py --rec <recordings folder> --laptop laptop.mp4
+# final video: voice-over (mix_voice.py), then the opening title
+python submission/add_title.py submission/Palmcast_demo_final.mp4
 ```
