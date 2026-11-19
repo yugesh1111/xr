@@ -24,6 +24,9 @@ LEAD, TAIL, XF = 0.5, 0.9, 0.03
 # video segments (make_walkthrough.py steps) shown under each voice part, with minimum lengths
 GROUPS = [[0], [1, 2], [3], [4], [5], [6]]
 MIN_LEN = [13.5, 15.0, 31.0, 27.0, 26.0, 26.0, 18.0]
+# with --isl and --teach: 9 video steps, 8 voice parts (ISL and teach-a-sign before predict())
+GROUPS_ALL = [[0], [1, 2], [3], [4], [5], [6], [7], [8]]
+MIN_LEN_ALL = [11.0, 12.0, 21.0, 17.0, 15.0, 14.0, 22.0, 10.0, 13.0]
 
 
 def run(cmd):
@@ -54,21 +57,37 @@ def cut_part(src, spans, out):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--voice", required=True)
-    ap.add_argument("--edit", required=True)
+    ap.add_argument("--voice", help="one recording of the whole script (with --edit)")
+    ap.add_argument("--edit", help="voice_edit.json: spans of --voice for each part")
+    ap.add_argument("--parts", help="folder with part1 ... partN, one recording per part, any audio format")
+    ap.add_argument("--isl")
+    ap.add_argument("--teach")
     ap.add_argument("--rec", required=True)
     ap.add_argument("--laptop", required=True)
     ap.add_argument("--out", default=str(ROOT / "submission" / "Palmcast_demo_final.mp4"))
     a = ap.parse_args()
-    parts = json.loads(Path(a.edit).read_text())["parts"]
+    full = bool(a.isl and a.teach)
+    groups, min_len = (GROUPS_ALL, MIN_LEN_ALL) if full else (GROUPS, MIN_LEN)
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         lens = []
-        for i, spans in enumerate(parts):
-            cut_part(a.voice, spans, tmp / f"v{i}.wav")
-            lens.append(dur(tmp / f"v{i}.wav"))
-        targets = list(MIN_LEN)
-        for g, idx in enumerate(GROUPS):
+        if a.parts:
+            files = sorted((f for f in Path(a.parts).iterdir() if f.stem.lower().startswith("part")),
+                           key=lambda f: int("".join(c for c in f.stem if c.isdigit())))
+            parts = files
+            for i, f in enumerate(files):
+                run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(f), "-ac", "1", "-ar", "48000", str(tmp / f"v{i}.wav")])
+                lens.append(dur(tmp / f"v{i}.wav"))
+        else:
+            parts = json.loads(Path(a.edit).read_text())["parts"]
+            for i, spans in enumerate(parts):
+                cut_part(a.voice, spans, tmp / f"v{i}.wav")
+                lens.append(dur(tmp / f"v{i}.wav"))
+        if len(parts) != len(groups):
+            sys.exit(f"{len(parts)} voice parts, the video has {len(groups)}")
+        GROUPS_ = groups
+        targets = list(min_len)
+        for g, idx in enumerate(GROUPS_):
             need = LEAD + lens[g] + TAIL
             have = sum(targets[j] for j in idx)
             if need > have:
@@ -79,10 +98,11 @@ def main():
             sys.exit(f"too long: {total:.1f} s > 180 s; trim the voice or the minimum lengths")
         silent = tmp / "silent.mp4"
         run([sys.executable, str(ROOT / "submission" / "make_walkthrough.py"), "--rec", a.rec, "--laptop", a.laptop,
-             "--out", str(silent), "--targets", json.dumps([round(t, 2) for t in targets])])
+             "--out", str(silent), "--targets", json.dumps([round(t, 2) for t in targets])]
+            + (["--isl", a.isl, "--teach", a.teach] if full else []))
         # place each voice part at the start of its group
         starts, t = [], 0.0
-        for idx in GROUPS:
+        for idx in GROUPS_:
             starts.append(t)
             t += sum(targets[j] for j in idx)
         ins, chains = [], []

@@ -114,6 +114,8 @@ def main():
     ap.add_argument("--rec", required=True, help="folder with the phone recordings")
     ap.add_argument("--laptop", required=True, help="recording made with live.py --demo --save")
     ap.add_argument("--out", default=str(ROOT / "submission" / "Palmcast_walkthrough.mp4"))
+    ap.add_argument("--isl", help="emulator recording: switch to Indian Sign Language, then the ISL built-in test")
+    ap.add_argument("--teach", help="emulator recording: Test > Teach the phone a new sign")
     ap.add_argument("--targets", help="JSON list: seconds for each segment (fit to a voice-over)")
     a = ap.parse_args()
     rec = Path(a.rec)
@@ -130,6 +132,14 @@ def main():
         (rec / "builtin.mp4", "Built-in test: same answers as the computer", "10 official test clips: 9 of 10 right, identical to Python", [(10, 35, 2.5), (112, 120, 1.0), (rec / "result_builtin.png", 14)], phone),
         (rec / "terminal.mp4", "predict() for the evaluators, offline", "python main.py on 9 web clips: 6 right; model 6.2 MB + 0.23 MB sign gate", [(0, dur(rec / "terminal.mp4"), 1.0)], (1274, 900)),
     ]
+    extra = []
+    if a.isl:
+        extra.append((Path(a.isl), "Indian Sign Language, one switch", "50 INCLUDE-50 words; built-in ISL test: 10 of 10, identical to Python",
+                      [(1.5, 14, 1.0), (14.5, 22, 1.0), (22, 47, 2.5), (47, 56.9, 1.0)], phone))
+    if a.teach:
+        extra.append((Path(a.teach), "Teach the phone a new sign", "Type the word, sign it 3 times: stored on the phone, no retraining",
+                      [(5, 13, 1.0), (17, 24, 1.0)], phone))
+    steps = steps[:-1] + extra + steps[-1:]   # predict() stays last
     targets = json.loads(a.targets) if a.targets else [None] * len(steps)
     chapters, t0 = [], 0.0
     with tempfile.TemporaryDirectory() as td:
