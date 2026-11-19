@@ -285,9 +285,10 @@ def build(template, out, team, college, members):
     dup_slide(prs, 6, 6, "TRACK REQUIREMENTS")
     dup_slide(prs, 6, 7, "RESULTS")
     dup_slide(prs, 6, 8, "IMPLEMENTATION")
+    dup_slide(prs, 6, 12, "INDIAN SIGN LANGUAGE & TEACH-A-SIGN")
     s = prs.slides
     # 0 title, 1 problem, 2 solution, 3 architecture, 4 training, 5 flow+edge cases, 6 track output,
-    # 7 requirements, 8 results, 9 implementation, 10 differentiation, 11 demo, 12 brownie, 13 thank you
+    # 7 requirements, 8 results, 9 implementation, 10 differentiation, 11 demo, 12 brownie, 13 ISL + teach, 14 thank you
 
     # 1 - title
     sl = s[0]
@@ -338,7 +339,7 @@ def build(template, out, team, college, members):
     picture(sl, MEDIA / "live_sentence_2.png", 2.5, 1.05, h=4.3, name="Screenshot sentence")
     text(sl, 4.65, 1.05, 4.95, 0.5, [[("Point the phone, read the words", {"bold": True, "size": 20, "color": MINT})]])
     text(sl, 4.65, 1.65, 4.95, 3.7, [
-        [("Live captions ", {"bold": True}), ("of 100 ASL words (WLASL100), only when the model is sure", {})],
+        [("Live captions ", {"bold": True}), ("of 100 ASL words, or 50 Indian Sign Language words, only when the model is sure", {})],
         [("Running sentence: ", {"bold": True}), ("signs join up; a pause ends it", {})],
         [("Speaks aloud ", {"bold": True}), ("with an offline voice", {})],
         [("Two-way: ", {"bold": True}), ("the hearing person taps Reply and talks; their words appear as captions", {})],
@@ -514,8 +515,33 @@ def build(template, out, team, college, members):
         [("Measure mode: ", {"bold": True}), ("a 10-minute run logs latency, power and heat", {})],
     ], size=12, bullets=True, space_after=7, name="Extras")
 
-    # 13 - thank you
+    # 13 - Indian Sign Language mode + teach-a-sign
     sl = s[13]
+    picture(sl, MEDIA / "isl_builtin_result.png", 0.45, 1.02, h=4.1, name="Shot ISL test")
+    text(sl, 0.45, 5.14, 2.9, 0.3, [[("ISL built-in test on the phone: 10 of 10", {"size": 9, "color": MUTED})]],
+         name="ISL shot caption")
+    text(sl, 3.55, 1.0, 6.0, 0.4, [[("Indian Sign Language, a switch in the Test menu", {"bold": True, "size": 15, "color": AMBER})]],
+         name="ISL title")
+    for i, (n, l) in enumerate([("99.0%", "INCLUDE-50 test, 192 clips (top-1)"),
+                                ("45%", "40 YouTube clips, signers never seen (top-5 72.5%)"),
+                                ("4.4 MB", "ISL word model, INT8; 1.8 ms")]):
+        stat(sl, 3.55 + i * 2.03, 1.45, 1.93, 1.32, n, l, MINT if i != 1 else AMBER, num_size=28, name=f"ISL number {i + 1}")
+    text(sl, 3.55, 2.83, 6.0, 0.5, [[("INCLUDE-50 (AI4Bharat, CC BY 4.0) was signed by deaf students of St. Louis School for the Deaf, "
+                                      "Adyar, Chennai. The YouTube clips were scored once, after the model was frozen.",
+                                      {"size": 9.5, "color": MUTED})]], name="ISL data note")
+    box(sl, 3.55, 3.4, 6.0, 1.95, name="Teach box")
+    text(sl, 3.72, 3.47, 5.7, 0.36, [[("Teach the phone a new sign", {"bold": True, "size": 14, "color": AMBER})]])
+    text(sl, 3.72, 3.85, 5.7, 1.5, [
+        [("Type the word, sign it 3 times. ", {"bold": True}),
+         ("No retraining: the model's 192-number fingerprint of the sign is stored and matched on the phone.", {})],
+        [("Your own signs (10 new words): ", {"bold": True}),
+         ("61% shown right, 1.7% wrong word, 4.9% false alarms; 1,000 ordinary signs act as rivals.", {})],
+        [("Built for one person's home signs: ", {"bold": True}),
+         ("other people's versions are caught only 16% of the time.", {})],
+    ], size=11, bullets=True, space_after=4, name="Teach points")
+
+    # 14 - thank you
+    sl = s[14]
     for sh in sl.shapes:
         if sh.name == "Text 25":
             p = sh.text_frame.paragraphs[0]
