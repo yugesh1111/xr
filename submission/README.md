@@ -9,7 +9,7 @@ Everything the final-submission email asks for, and where it is in this reposito
 | Code | repository root: `main.py` (`predict()`), `echogesture/`, `scripts/`, `android/` |
 | Resources | `models/` (INT8 model, sign gate, word list), `results/` |
 | Document | [`../README.md`](../README.md), [`../docs/DETAILS.md`](../docs/DETAILS.md) (full technical record), [`../docs/USER_GUIDE.md`](../docs/USER_GUIDE.md) |
-| Demo | [`Palmcast_demo_final.mp4`](Palmcast_demo_final.mp4) (2:55, with our voice-over): real screen recordings only, feature by feature, plus the architecture; voice-over script in [`SPEECH_SCRIPT.md`](SPEECH_SCRIPT.md). Also [`Palmcast_live_pipeline_10_sentences.mp4`](Palmcast_live_pipeline_10_sentences.mp4) (all 10 test sentences through the live pipeline) |
+| Demo | [`Palmcast_demo_final.mp4`](Palmcast_demo_final.mp4) (2:58, with our voice-over): real screen recordings only, feature by feature, plus the architecture, Indian Sign Language mode and teach-a-sign; voice-over script in [`SPEECH_SCRIPT.md`](SPEECH_SCRIPT.md). Also [`Palmcast_live_pipeline_10_sentences.mp4`](Palmcast_live_pipeline_10_sentences.mp4) (all 10 test sentences through the live pipeline) |
 | Diagrams | [`diagrams/`](diagrams): architecture (device, training/evaluation) and per-frame flowchart, draw.io sources + PNG |
 | PPT | [`Palmcast_XR_Hackathon_Track02.pptx`](Palmcast_XR_Hackathon_Track02.pptx), built on the organisers' template |
 | Package | Android app: `Palmcast-arm64.apk` on the repository's **Releases** page. Evaluation bundle: `python scripts/make_submission.py --team <team name>` writes `dist/<team name>.zip` in the slides' layout (`src/` + `results/`) |
@@ -24,7 +24,7 @@ Everything the final-submission email asks for, and where it is in this reposito
 | `results.csv`, the six metrics | `results/results.csv`: 5 of 6 PASS, power needs a phone run |
 | Quantized model + conversion script, < 20 MB INT8 | `models/model_int8.onnx` 6.23 MB (+ sign gate 0.23 MB), `scripts/export_onnx.py` |
 | Python 3.11, `requirements.txt` | checked on Python 3.11.15; `requirements-inference.txt` (in the bundle as `src/requirements.txt`) |
-| Demo video 2-3 min | `submission/Palmcast_demo_final.mp4` (2:55) |
+| Demo video 2-3 min | `submission/Palmcast_demo_final.mp4` (2:58) |
 
 ## results.csv
 

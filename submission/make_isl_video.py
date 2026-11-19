@@ -1,6 +1,6 @@
 """Short extra video: Indian Sign Language mode and teach-a-sign, in the same
 style as the main walkthrough (make_walkthrough.py). The main demo stays at
-2:55 because the track asks for 2-3 minutes; this one sits next to it.
+under 3:00 because the track asks for 2-3 minutes; this one sits next to it.
 
     python submission/make_isl_video.py --rec isl_scene_full_take.mp4 [--teach teach.mp4] [--voice isl_voice.m4a]
 

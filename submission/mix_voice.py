@@ -60,6 +60,8 @@ def main():
     ap.add_argument("--voice", help="one recording of the whole script (with --edit)")
     ap.add_argument("--edit", help="voice_edit.json: spans of --voice for each part")
     ap.add_argument("--parts", help="folder with part1 ... partN, one recording per part, any audio format")
+    ap.add_argument("--insert", nargs=2, metavar=("ISL_VOICE", "TEACH_VOICE"),
+                    help="with --voice/--edit (6 parts): new recordings for the ISL and teach-a-sign parts, put before the last part")
     ap.add_argument("--isl")
     ap.add_argument("--teach")
     ap.add_argument("--rec", required=True)
@@ -83,6 +85,17 @@ def main():
             for i, spans in enumerate(parts):
                 cut_part(a.voice, spans, tmp / f"v{i}.wav")
                 lens.append(dur(tmp / f"v{i}.wav"))
+        if a.insert:
+            # old parts 1-5, then ISL and teach-a-sign, then the old last part
+            for i, f in enumerate(a.insert):
+                run(["ffmpeg", "-y", "-loglevel", "error", "-i", f, "-ac", "1", "-ar", "48000", str(tmp / f"new{i}.wav")])
+            last = len(parts) - 1
+            (tmp / f"v{last}.wav").rename(tmp / "last.wav")
+            (tmp / "new0.wav").rename(tmp / f"v{last}.wav")
+            (tmp / "new1.wav").rename(tmp / f"v{last + 1}.wav")
+            (tmp / "last.wav").rename(tmp / f"v{last + 2}.wav")
+            lens = lens[:last] + [dur(tmp / f"v{last}.wav"), dur(tmp / f"v{last + 1}.wav"), lens[last]]
+            parts = list(parts[:last]) + ["isl", "teach", parts[last]]
         if len(parts) != len(groups):
             sys.exit(f"{len(parts)} voice parts, the video has {len(groups)}")
         GROUPS_ = groups

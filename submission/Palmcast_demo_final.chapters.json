@@ -7,26 +7,36 @@
  {
   "part": 2,
   "voice_start": 14.5,
-  "voice_len": 35.3
+  "voice_len": 32.0
  },
  {
   "part": 3,
-  "voice_start": 60.5,
-  "voice_len": 27.77
+  "voice_start": 47.9,
+  "voice_len": 20.23
  },
  {
   "part": 4,
-  "voice_start": 89.67,
+  "voice_start": 69.53,
   "voice_len": 27.76
  },
  {
   "part": 5,
-  "voice_start": 118.83,
-  "voice_len": 32.66
+  "voice_start": 98.69,
+  "voice_len": 22.73
  },
  {
   "part": 6,
-  "voice_start": 152.89,
+  "voice_start": 122.82,
+  "voice_len": 22.3
+ },
+ {
+  "part": 7,
+  "voice_start": 146.52,
+  "voice_len": 7.2
+ },
+ {
+  "part": 8,
+  "voice_start": 156.52,
   "voice_len": 20.85
  }
 ]

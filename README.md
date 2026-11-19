@@ -40,7 +40,7 @@ device.
 | Submission package (`team_name.zip`: `src/` + `results/`) | [`submission/WeCode.zip`](submission/WeCode.zip) |
 | Source code | this repository: [`main.py`](main.py) (`predict()`), [`echogesture/`](echogesture), [`scripts/`](scripts), [`android/`](android) |
 | Presentation | [`submission/Palmcast_XR_Hackathon_Track02.pptx`](submission/Palmcast_XR_Hackathon_Track02.pptx) |
-| Video | [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) (2:55) |
+| Video | [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) (2:58) |
 | README | this page, plus the [user guide](docs/USER_GUIDE.md) and [technical record](docs/DETAILS.md) |
 | APK | [`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) · [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk) |
 | Results | [`results/results.csv`](results/results.csv), [`results/predictions.jsonl`](results/predictions.jsonl) |
@@ -64,9 +64,9 @@ Each GIF is the live pipeline on test signers that were never in training: the h
 
 All three are screen recordings of the release APK on the Android emulator
 (the laptop camera is the phone camera).
-**[Demo video, 2:55, with voice-over](submission/Palmcast_demo_final.mp4)**: real
+**[Demo video, 2:58, with voice-over](submission/Palmcast_demo_final.mp4)**: real
 screen recordings only - live camera, the on-device architecture, signers the model never saw, a web video uploaded
-into the app, the sentence test, the built-in test and `predict()`
+into the app, the sentence test, the built-in test, Indian Sign Language mode, teaching the phone a new sign and `predict()`
 ([speech script](submission/SPEECH_SCRIPT.md)).
 
 ![Live pipeline on a laptop: woman drink hot](docs/media/laptop_live.png)
