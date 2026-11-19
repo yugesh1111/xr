@@ -1,12 +1,12 @@
-# Speech script - Palmcast walkthrough (2:58)
+# Speech script - Palmcast walkthrough (2:57)
 
-Recorded and edited into `submission/Palmcast_demo_final.mp4` (`submission/mix_voice.py`). Parts 1-5 and 8 are our
-first recording, shortened a little; parts 6 and 7 (Indian Sign Language, teach-a-sign) were recorded later. The track
+Recorded and edited into `submission/Palmcast_demo_final.mp4` (`submission/mix_voice.py`). Parts 2-5 and 8 are our
+first recording, shortened a little; parts 1, 6 and 7 (introduction, Indian Sign Language, teach-a-sign) were recorded later. The track
 asks for 2-3 minutes, so a few side remarks were cut to make room.
 
-### Part 1 - Live on the phone  (screen: signing "help" · about 13 s)
+### Part 1 - Live on the phone  (screen: signing "help" · about 11 s, recorded later by Amritha)
 
-> Hi, we're team WeCode, and this is Palmcast. It's running on an Android phone that has no internet permission at all. I sign "help"... and there it is. Help, fifty-four percent.
+> Hello, this is Palmcast, from team WeCode. Everything you'll see runs on the phone, offline. I sign "help"... and there it is. Help, fifty-four percent.
 
 ### Part 2 - How it works, live  (screen: the architecture, then signers building sentences · about 33 s)
 

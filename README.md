@@ -12,7 +12,7 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 ![Robustness](https://img.shields.io/badge/robustness%20drop-4.6%20pt-00E5B0)
 ![Offline](https://img.shields.io/badge/network-none-F59E0B)
 ![Python](https://img.shields.io/badge/python-3.11-555)
-[![Demo on YouTube](https://img.shields.io/badge/demo-YouTube%202%3A58-FF0000)](https://youtu.be/fKg2cl0Uf9g)
+[![Demo on YouTube](https://img.shields.io/badge/demo-YouTube%202%3A57-FF0000)](https://youtu.be/fKg2cl0Uf9g)
 
 **[Download the app](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk)** ·
 **[Demo video (YouTube)](https://youtu.be/fKg2cl0Uf9g)** ·
@@ -23,7 +23,7 @@ Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - 
 
 [![Watch the demo on YouTube](docs/media/demo_thumbnail.jpg)](https://youtu.be/fKg2cl0Uf9g)
 
-*Click the picture to watch the 2:58 demo on YouTube.*
+*Click the picture to watch the 2:57 demo on YouTube.*
 
 </div>
 
@@ -74,7 +74,7 @@ Screenshots of each one: [docs/implementation](docs/implementation/README.md).
 | Submission package (`team_name.zip`: `src/` + `results/`) | [`submission/WeCode.zip`](submission/WeCode.zip) |
 | Source code | this repository: [`main.py`](main.py) (`predict()`), [`echogesture/`](echogesture), [`scripts/`](scripts), [`android/`](android) |
 | Presentation | [`submission/Palmcast_XR_Hackathon_Track02.pptx`](submission/Palmcast_XR_Hackathon_Track02.pptx) |
-| Video | **[YouTube](https://youtu.be/fKg2cl0Uf9g)** (2:58), same file in the repository: [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) |
+| Video | **[YouTube](https://youtu.be/fKg2cl0Uf9g)** (2:57), same file in the repository: [`submission/Palmcast_demo_final.mp4`](submission/Palmcast_demo_final.mp4) |
 | README | this page, plus the [user guide](docs/USER_GUIDE.md) and [technical record](docs/DETAILS.md) |
 | APK | [`Palmcast-arm64.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk) · [`Palmcast-armv7.apk`](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-armv7.apk) · [emulator APK](https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-x86_64-emulator.apk) ([release page](https://github.com/yugesh1111/xr/releases/latest)) |
 | Results | [`results/results.csv`](results/results.csv), [`results/predictions.jsonl`](results/predictions.jsonl) |
@@ -98,7 +98,7 @@ Each GIF is the live pipeline on test signers that were never in training: the h
 
 All three are screen recordings of the release APK on the Android emulator
 (the laptop camera is the phone camera).
-**[Demo video, 2:58, with voice-over](https://youtu.be/fKg2cl0Uf9g)** (on YouTube): real
+**[Demo video, 2:57, with voice-over](https://youtu.be/fKg2cl0Uf9g)** (on YouTube): real
 screen recordings only - live camera, the on-device architecture, signers the model never saw, a web video uploaded
 into the app, the sentence test, the built-in test, Indian Sign Language mode, teaching the phone a new sign and `predict()`
 ([speech script](submission/SPEECH_SCRIPT.md)).

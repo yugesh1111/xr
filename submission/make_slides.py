@@ -416,7 +416,7 @@ def build(template, out, team, college, members):
         [("INT8 ONNX ", {"bold": True}), ("+ conversion script", {})],
         [("README, Docker, ", {"bold": True}), ("Python 3.11", {})],
         [("Android APK", {"bold": True})],
-        [("Demo video ", {"bold": True}), ("2:58 walkthrough", {})],
+        [("Demo video ", {"bold": True}), ("2:57 walkthrough", {})],
     ], size=12, bullets=True, space_after=5)
 
     # 7b - requirements from the track slides, with evidence
@@ -488,7 +488,7 @@ def build(template, out, team, college, members):
     vid.name = "Walkthrough video"
     demo_tb = text(sl, 0.45, 4.1, 5.25, 1.3, [
         "Live phone camera, the on-device architecture, signers the model never saw, a web clip, sentence test 20/30, built-in test 9/10, Indian Sign Language 10/10, teach-a-sign, predict().",
-        "Real screen recordings with our voice-over, 2:58. File: submission/Palmcast_demo_final.mp4.",
+        "Real screen recordings with our voice-over, 2:57. File: submission/Palmcast_demo_final.mp4.",
         [("Watch on YouTube: ", {"bold": True}), ("youtu.be/fKg2cl0Uf9g", {"color": CYAN})],
     ], size=11, bullets=True, space_after=4, name="Demo points")
     for p in demo_tb.text_frame.paragraphs:

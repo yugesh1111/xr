@@ -34,7 +34,7 @@ State as of 19 Nov (this file was the working plan from 8 Nov):
 | Docker | done, checked with `--network none` | 4 |
 | README with reproducible setup | done | 6 |
 | phone latency / power / thermal | laptop CPU run done; phone run (Test → Measure) still to do | 7 |
-| demo video (max 3 min), presentation | done: [video](https://youtu.be/fKg2cl0Uf9g) (2:58), deck | 8 |
+| demo video (max 3 min), presentation | done: [video](https://youtu.be/fKg2cl0Uf9g) (2:57), deck | 8 |
 
 Before starting: `git pull`, then `python -m pytest tests` (13 tests must pass).
 Read the brief (pages 9-11) once more: if it gives an exact format for

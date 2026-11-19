@@ -62,6 +62,7 @@ def main():
     ap.add_argument("--parts", help="folder with part1 ... partN, one recording per part, any audio format")
     ap.add_argument("--insert", nargs=2, metavar=("ISL_VOICE", "TEACH_VOICE"),
                     help="with --voice/--edit (6 parts): new recordings for the ISL and teach-a-sign parts, put before the last part")
+    ap.add_argument("--part1", help="a new recording that replaces part 1 (the introduction)")
     ap.add_argument("--isl")
     ap.add_argument("--teach")
     ap.add_argument("--rec", required=True)
@@ -96,6 +97,9 @@ def main():
             (tmp / "last.wav").rename(tmp / f"v{last + 2}.wav")
             lens = lens[:last] + [dur(tmp / f"v{last}.wav"), dur(tmp / f"v{last + 1}.wav"), lens[last]]
             parts = list(parts[:last]) + ["isl", "teach", parts[last]]
+        if a.part1:
+            run(["ffmpeg", "-y", "-loglevel", "error", "-i", a.part1, "-ac", "1", "-ar", "48000", str(tmp / "v0.wav")])
+            lens[0] = dur(tmp / "v0.wav")
         if len(parts) != len(groups):
             sys.exit(f"{len(parts)} voice parts, the video has {len(groups)}")
         GROUPS_ = groups
