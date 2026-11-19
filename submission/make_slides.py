@@ -489,12 +489,12 @@ def build(template, out, team, college, members):
     demo_tb = text(sl, 0.45, 4.1, 5.25, 1.3, [
         "Live phone camera, the on-device architecture, signers the model never saw, a web clip, sentence test 20/30, built-in test 9/10, Indian Sign Language 10/10, teach-a-sign, predict().",
         "Real screen recordings with our voice-over, 2:57. File: submission/Palmcast_demo_final.mp4.",
-        [("Watch on YouTube: ", {"bold": True}), ("youtu.be/fKg2cl0Uf9g", {"color": CYAN})],
+        [("Watch on YouTube: ", {"bold": True}), ("youtu.be/aDAs7t2xOe0", {"color": CYAN})],
     ], size=11, bullets=True, space_after=4, name="Demo points")
     for p in demo_tb.text_frame.paragraphs:
         for r in p.runs:
             if r.text.startswith("youtu.be/"):
-                r.hyperlink.address = "https://youtu.be/fKg2cl0Uf9g"
+                r.hyperlink.address = "https://youtu.be/aDAs7t2xOe0"
     box(sl, 5.9, 1.05, 3.65, 4.25, name="Setup box")
     text(sl, 6.05, 1.12, 3.4, 0.35, [[("Local setup", {"bold": True, "size": 14, "color": AMBER})]])
     code = ["git clone https://" + REPO, "cd xr", "pip install -r", "  requirements-inference.txt",
