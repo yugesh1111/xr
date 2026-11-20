@@ -6,6 +6,22 @@
 
 Team **WeCode** · VIT Chennai · Samsung PRISM XR Hackathon 2026 · Track 02 - *EchoGesture: Sign Language Prediction on Edge Device*
 
+</div>
+
+> **Quick links for the judges**
+>
+> | | |
+> |---|---|
+> | **Demo video (2:57)** | https://youtu.be/aDAs7t2xOe0 |
+> | **Android app (APK)** | https://github.com/yugesh1111/xr/releases/latest/download/Palmcast-arm64.apk |
+> | **All downloads** (64-bit, 32-bit and emulator APKs, `WeCode.zip`) | https://github.com/yugesh1111/xr/releases/latest |
+> | **Submission package** (`src/` + `results/`) | [`submission/WeCode.zip`](submission/WeCode.zip) |
+> | **Presentation** | [`submission/Palmcast_XR_Hackathon_Track02.pptx`](submission/Palmcast_XR_Hackathon_Track02.pptx) |
+> | **Results** | [`results/results.csv`](results/results.csv) · [`results/predictions.jsonl`](results/predictions.jsonl) |
+> | **Screenshots of every feature** | [`docs/implementation`](docs/implementation/README.md) |
+
+<div align="center">
+
 ![Top-1 on unseen signers](https://img.shields.io/badge/top--1%20unseen%20signers-78.1%25-00E5B0)
 ![Model](https://img.shields.io/badge/model-6.2%20MB%20INT8-00B4D8)
 ![Latency](https://img.shields.io/badge/latency%20p95-14%20ms%20per%20frame-00B4D8)
